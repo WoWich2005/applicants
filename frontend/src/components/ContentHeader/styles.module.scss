@@ -5,26 +5,22 @@
 
 	position: relative;
 
-	.langSwitcher {
+	.rightControls {
 		position: absolute;
 
 		top: 50%;
-		right: 68px;
+		right: 15px;
 
 		transform: translateY(-50%);
+
+		display: flex;
+		align-items: center;
+		gap: 8px;
 	}
 
 	.avatar {
-		position: absolute;
-
-		top: 50%;
-		right: 0;
-
 		width: 40px;
 		height: 40px;
-
-		margin-right: 15px;
-		transform: translateY(-50%);
 
 		cursor: pointer;
 	}
@@ -35,15 +31,4 @@
 	width: 200px;
 
 	text-align: right;
-}
-
-.themeToggleItem {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	min-width: 160px;
-
-	:last-child {
-		margin-left: auto;
-	}
 }

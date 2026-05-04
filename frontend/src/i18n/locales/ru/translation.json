@@ -63,6 +63,7 @@
     "settings": "Настройки",
     "users": "Пользователи",
     "darkTheme": "Тёмная тема",
+    "lightTheme": "Светлая тема",
     "changePassword": "Сменить пароль",
     "logout": "Выйти"
   },

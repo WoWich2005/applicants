@@ -3,7 +3,7 @@ import styles from './styles.module.scss'
 import AddButton from '../Buttons/AddButton'
 import ApplicantForm from '../Forms/ApplicantForm'
 import { useState } from 'react'
-import { Avatar, Button, Dropdown, Switch } from 'antd'
+import { Avatar, Button, Dropdown, Tooltip } from 'antd'
 import { generatePath, useNavigate } from 'react-router'
 import { ROUTES } from '../../constants/routes'
 import { DownOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
@@ -33,17 +33,6 @@ function ContentHeader() {
     {
       key: 'divider',
       type: 'divider'
-    },
-    {
-      key: 'ThemeToggle',
-      label: (
-        <span className={styles.themeToggleItem}>
-          {isDark ? <MoonOutlined /> : <SunOutlined />}
-          {t('nav.darkTheme')}
-          <Switch size="small" checked={isDark} />
-        </span>
-      ),
-      onClick: toggleTheme,
     },
     {
       key: 'ChangePassword',
@@ -89,32 +78,41 @@ function ContentHeader() {
         />
       )}
 
-      <Dropdown
-        className={styles.langSwitcher}
-        menu={{
-          items: [
-            { key: 'ru', label: 'Русский', onClick: () => setLanguage('ru') },
-            { key: 'en', label: 'English', onClick: () => setLanguage('en') },
-          ],
-          selectedKeys: [language],
-        }}
-        placement="bottomRight"
-        trigger={['click']}
-      >
-        <Button size="small" type="text">
-          {language.toUpperCase()} <DownOutlined />
-        </Button>
-      </Dropdown>
+      <div className={styles.rightControls}>
+        <Dropdown
+          menu={{
+            items: [
+              { key: 'ru', label: 'Русский', onClick: () => setLanguage('ru') },
+              { key: 'en', label: 'English', onClick: () => setLanguage('en') },
+            ],
+            selectedKeys: [language],
+          }}
+          placement="bottomRight"
+          trigger={['click']}
+        >
+          <Button size="small" type="text">
+            {language.toUpperCase()} <DownOutlined />
+          </Button>
+        </Dropdown>
 
-      <Dropdown
-        className={styles.avatar}
-        menu={{ items }}
-        placement="bottomLeft"
-        arrow
-        trigger={['click']}
-      >
-        <Avatar icon={<UserOutlined />} />
-      </Dropdown>
+        <Tooltip title={isDark ? t('nav.lightTheme') : t('nav.darkTheme')}>
+          <Button
+            size="small"
+            type="text"
+            icon={isDark ? <MoonOutlined /> : <SunOutlined />}
+            onClick={toggleTheme}
+          />
+        </Tooltip>
+
+        <Dropdown
+          menu={{ items }}
+          placement="bottomLeft"
+          arrow
+          trigger={['click']}
+        >
+          <Avatar className={styles.avatar} icon={<UserOutlined />} />
+        </Dropdown>
+      </div>
 
       <ChangePasswordModal
         open={isChangePasswordOpen}

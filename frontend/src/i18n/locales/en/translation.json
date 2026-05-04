@@ -63,6 +63,7 @@
     "settings": "Settings",
     "users": "Users",
     "darkTheme": "Dark Theme",
+    "lightTheme": "Light Theme",
     "changePassword": "Change Password",
     "logout": "Sign Out"
   },
