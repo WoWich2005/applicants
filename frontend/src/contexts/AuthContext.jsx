@@ -16,11 +16,25 @@ const AuthContext = createContext(defaultContext)
 
 const STORAGE_KEY = 'bntu_auth'
 
+const isTokenExpired = (token) => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp * 1000 < Date.now()
+  } catch {
+    return true
+  }
+}
+
 export function AuthProvider({ children }) {
   const [auth, setAuth] = useState(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? JSON.parse(stored) : null
+      const parsed = stored ? JSON.parse(stored) : null
+      if (parsed?.token && isTokenExpired(parsed.token)) {
+        localStorage.removeItem(STORAGE_KEY)
+        return null
+      }
+      return parsed
     } catch {
       return null
     }
