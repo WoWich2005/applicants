@@ -1,6 +1,8 @@
 import { ConfigProvider, theme as antTheme } from 'antd'
 import ruRU from 'antd/locale/ru_RU'
+import enUS from 'antd/locale/en_US'
 import { ThemeProvider, useTheme } from '../contexts/ThemeContext'
+import { LanguageProvider, useLanguage } from '../contexts/LanguageContext'
 
 const baseTokens = {
   fontSizeHeading1: 28,
@@ -11,10 +13,11 @@ const baseTokens = {
 /** @param {import('react').PropsWithChildren} props */
 function ThemedConfigProvider(props) {
   const { isDark } = useTheme()
+  const { language } = useLanguage()
 
   return (
     <ConfigProvider
-      locale={ruRU}
+      locale={language === 'ru' ? ruRU : enUS}
       theme={{
         algorithm: isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm,
         token: {
@@ -37,11 +40,13 @@ function ThemedConfigProvider(props) {
 /** @param {import('react').PropsWithChildren} props */
 function GlobalProvider(props) {
   return (
-    <ThemeProvider>
-      <ThemedConfigProvider>
-        {props.children}
-      </ThemedConfigProvider>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <ThemedConfigProvider>
+          {props.children}
+        </ThemedConfigProvider>
+      </ThemeProvider>
+    </LanguageProvider>
   )
 }
 

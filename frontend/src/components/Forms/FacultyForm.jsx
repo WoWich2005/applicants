@@ -2,8 +2,10 @@ import { Button, Form, Input, message, Space } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { facultiesApi } from "../../api/facultyApi"
+import { useTranslation } from "react-i18next"
 
 function FacultyForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -36,7 +38,7 @@ function FacultyForm(props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка обновления факультета на сервере"
+          : t('faculty.form.saveError')
       )
       console.log(err)
     } finally {
@@ -63,12 +65,12 @@ function FacultyForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Имя факультета"
+              label={t('faculty.form.nameLabel')}
               name="name"
               rules={[
                 {
                   required: true,
-                  message: "Имя факультета обязательно для заполнения",
+                  message: t('faculty.form.nameRequired'),
                 }
               ]}
             >
@@ -80,7 +82,7 @@ function FacultyForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить факультет' : 'Добавить факультет'}
+                {props.elementId ? t('faculty.form.updateButton') : t('faculty.form.addButton')}
               </Button>
             )}
             {props.buttons}

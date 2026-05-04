@@ -1,20 +1,19 @@
 import { Button, Form, Input, message, Select, Space } from "antd"
 import { useEffect, useState } from "react"
 import { usersApi } from "../../api/usersApi"
+import { useTranslation } from "react-i18next"
 
-const ROLES = [
-  { value: 'SuperAdmin', label: 'Суперпользователь' },
-  { value: 'FacultyManager', label: 'Роль факультета' },
-  { value: 'AdmissionsOperator', label: 'Оператор приёмной комиссии' },
-  { value: 'ResultViewer', label: 'Просмотр результатов' },
-]
+const ROLE_VALUES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
 
 function UserForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
   const [filterFacultyIds, setFilterFacultyIds] = useState(/** @type {number[]} */ ([]))
   const selectedRole = Form.useWatch('role', form)
+
+  const ROLES = ROLE_VALUES.map(value => ({ value, label: t(`users.roles.${value}`) }))
 
   const getFilteredSpecialties = (facultyIds) => {
     const specialties = props.specialties ?? []
@@ -70,7 +69,7 @@ function UserForm(props) {
         role: values.role,
         facultyId: values.role === 'FacultyManager' ? values.facultyId : null,
         specialtyIds: values.role === 'AdmissionsOperator' ? (values.specialtyIds ?? []) : [],
-        facultyAccessIds: values.role === 'ResultViewer' ? (values.facultyAccessIds ?? []) : [],
+        facultyAccessIds: values.role === 'DataViewer' ? (values.facultyAccessIds ?? []) : [],
       }
 
       if (props.elementId) {
@@ -85,7 +84,7 @@ function UserForm(props) {
       form.resetFields()
       setFilterFacultyIds([])
     } catch (err) {
-      messageApi.error(err.response?.data?.message || 'Ошибка сохранения')
+      messageApi.error(err.response?.data?.message || t('users.form.saveError'))
     } finally {
       setIsLoading(false)
     }
@@ -95,67 +94,67 @@ function UserForm(props) {
     <>
       {contextHolder}
       <Form form={form} layout="vertical" onFinish={onFinish} autoComplete="off">
-        <Form.Item name="username" label="Логин" rules={[{ required: true, message: 'Введите логин' }]}>
+        <Form.Item name="username" label={t('users.form.loginLabel')} rules={[{ required: true, message: t('users.form.loginRequired') }]}>
           <Input />
         </Form.Item>
         <Form.Item
           name="password"
-          label="Пароль"
+          label={t('users.form.passwordLabel')}
           rules={props.elementId ? [] : [
-            { required: true, message: 'Введите пароль' },
-            { min: 6, message: 'Минимум 6 символов' },
+            { required: true, message: t('users.form.passwordRequired') },
+            { min: 6, message: t('users.form.passwordMinLength') },
           ]}
         >
-          <Input.Password placeholder={props.elementId ? 'Оставьте пустым чтобы не менять' : ''} />
+          <Input.Password placeholder={props.elementId ? t('users.form.passwordLeaveEmpty') : ''} />
         </Form.Item>
-        <Form.Item name="role" label="Роль" rules={[{ required: true, message: 'Выберите роль' }]}>
+        <Form.Item name="role" label={t('users.form.roleLabel')} rules={[{ required: true, message: t('users.form.roleRequired') }]}>
           <Select options={ROLES} />
         </Form.Item>
 
         {selectedRole === 'FacultyManager' && (
-          <Form.Item name="facultyId" label="Факультет" rules={[{ required: true, message: 'Выберите факультет' }]}>
+          <Form.Item name="facultyId" label={t('users.form.facultyLabel')} rules={[{ required: true, message: t('users.form.facultyRequired') }]}>
             <Select
               options={(props.faculties ?? []).map(f => ({ value: f.id, label: f.name }))}
-              placeholder="Выберите факультет"
+              placeholder={t('users.form.facultyPlaceholder')}
             />
           </Form.Item>
         )}
 
         {selectedRole === 'AdmissionsOperator' && (
           <>
-            <Form.Item label="Факультеты">
+            <Form.Item label={t('users.form.filterFacultiesLabel')}>
               <Select
                 mode="multiple"
                 options={(props.faculties ?? []).map(f => ({ value: f.id, label: f.name }))}
                 value={filterFacultyIds}
                 onChange={handleFacultyFilterChange}
-                placeholder="Выберите факультеты"
+                placeholder={t('users.form.filterFacultiesPlaceholder')}
               />
             </Form.Item>
-            <Form.Item name="specialtyIds" label="Доступные специальности">
+            <Form.Item name="specialtyIds" label={t('users.form.specialtiesLabel')}>
               <Select
                 mode="multiple"
                 options={getFilteredSpecialties(filterFacultyIds).map(s => ({ value: s.id, label: s.name }))}
-                placeholder={filterFacultyIds.length ? 'Выберите специальности' : 'Сначала выберите факультеты'}
+                placeholder={filterFacultyIds.length ? t('users.form.specialtiesPlaceholder') : t('users.form.specialtiesDisabledPlaceholder')}
                 disabled={!filterFacultyIds.length}
               />
             </Form.Item>
           </>
         )}
 
-        {selectedRole === 'ResultViewer' && (
-          <Form.Item name="facultyAccessIds" label="Доступные факультеты для просмотра результатов">
+        {selectedRole === 'DataViewer' && (
+          <Form.Item name="facultyAccessIds" label={t('users.form.facultyAccessLabel')}>
             <Select
               mode="multiple"
               options={(props.faculties ?? []).map(f => ({ value: f.id, label: f.name }))}
-              placeholder="Выберите факультеты (пусто = все)"
+              placeholder={t('users.form.facultyAccessPlaceholder')}
             />
           </Form.Item>
         )}
 
         <Space>
           <Button type="primary" htmlType="submit" loading={isLoading}>
-            {props.elementId ? 'Сохранить' : 'Создать'}
+            {props.elementId ? t('users.form.saveButton') : t('users.form.createButton')}
           </Button>
           {props.buttons}
         </Space>

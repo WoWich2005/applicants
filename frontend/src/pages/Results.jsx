@@ -1,10 +1,12 @@
-import { Breadcrumb, message, Space, Table, Typography } from "antd"
+import { message, Space, Table, Typography } from "antd"
 import Title from "../components/Title"
 import { useEffect, useState } from "react"
 import { facultiesApi } from "../api/facultyApi"
 import { instance } from "../api"
+import { useTranslation } from "react-i18next"
 
 function Results() {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
 
   const [dataSource, setDataSource] = useState([])
@@ -17,24 +19,24 @@ function Results() {
         const [_, response] = await Promise.all([delayPromise, facultiesApi.getAll()])
         setDataSource(response.data)
       } catch (err) {
-        messageApi.error("Ошибка получения данных")
+        messageApi.error(t('results.error'))
         console.log(err)
       } finally {
         setIsLoading(false)
       }
     }
-  
+
     fetchData()
   }, [])
 
   const columns = [
     {
-      title: "Факультет",
+      title: t('results.colFaculty'),
       dataIndex: "name",
       key: "name",
     },
     {
-      title: "Действия",
+      title: t('results.colActions'),
       dataIndex: "control",
       key: "control",
       width: "250px",
@@ -44,7 +46,7 @@ function Results() {
             <Typography.Link
               onClick={() => window.open(`http://localhost:5059/get_results/${el.id}`, '_blank', 'noopener,noreferrer')}
             >
-              Скачать Excel
+              {t('results.downloadExcel')}
             </Typography.Link>
           </Space>
         )
@@ -57,13 +59,8 @@ function Results() {
       {contextHolder}
 
       <Title
-        title="Результаты"
-        helpText={
-          <>
-            На данной странице Вы можете скачать результаты в формате таблицы
-            Excel
-          </>
-        }
+        title={t('results.title')}
+        helpText={t('results.helpText')}
       />
 
       <Table

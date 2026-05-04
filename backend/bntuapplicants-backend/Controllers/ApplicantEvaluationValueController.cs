@@ -5,11 +5,12 @@ using bntuapplicants_backend.Models;
 using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [ApiController]
     [Route("/api/v1/applicant_evaluation_values")]
     public class ApplicantEvaluationValueController : ControllerBase
@@ -17,15 +18,18 @@ namespace bntuapplicants_backend.Controllers
         private readonly IApplicantEvaluationValueRepository _repository;
         private readonly IEvaluationCriteriaRepository _criteriaRepository;
         private readonly SelectionService _selectionService;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public ApplicantEvaluationValueController(
             IApplicantEvaluationValueRepository repository,
             IEvaluationCriteriaRepository criteriaRepository,
-            SelectionService selectionService)
+            SelectionService selectionService,
+            IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _criteriaRepository = criteriaRepository;
             _selectionService = selectionService;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -50,10 +54,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var criteria = await _criteriaRepository.GetByIdAsync(criteriaId);
             if (criteria == null)
-                return BadRequest("Оценочный параметр не найден");
+                return BadRequest(new { message = (string)_localizer["EvaluationCriteria.NotFoundSimple"] });
 
             if (value < criteria.MinValue || value > criteria.MaxValue)
-                return BadRequest($"Значение {value} выходит за пределы допустимого диапазона [{criteria.MinValue}, {criteria.MaxValue}] для параметра «{criteria.Name}»");
+                return BadRequest(new { message = (string)_localizer["ApplicantEvaluationValue.ValueOutOfRange", value, criteria.MinValue, criteria.MaxValue, criteria.Name] });
 
             return null;
         }
@@ -76,7 +80,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось добавить оценочный параметр для абитуриента");
+                return StatusCode(500, new { message = (string)_localizer["ApplicantEvaluationValue.CreateError"] });
 
             await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
 
@@ -96,7 +100,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Запись с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
 
             var rangeError = await ValidateValueRange(dto.EvaluationCriteriaId, dto.Value);
             if (rangeError != null)
@@ -111,7 +115,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении записи");
+                return StatusCode(500, new { message = (string)_localizer["Record.UpdateError"] });
 
             await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
             if (existing.ApplicantId != dto.ApplicantId)
@@ -128,11 +132,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Запись с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении записи");
+                return StatusCode(500, new { message = (string)_localizer["Record.DeleteError"] });
 
             await _selectionService.RecalculateForApplicantAsync(existing.ApplicantId);
 

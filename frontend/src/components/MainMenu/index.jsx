@@ -15,6 +15,7 @@ import styles from './styles.module.scss'
 import { ROUTES } from '../../constants/routes'
 import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { useAuth } from '../../contexts/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 const ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
 const MANAGE_ROLES = ['SuperAdmin', 'FacultyManager']
@@ -24,6 +25,7 @@ const VIEW_ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'D
 function MainMenu({ collapsed }) {
   let [defaultOpenKeys, setDefaultOpenKeys] = useLocalStorage("mainMenuOpenedItems", [])
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const role = auth?.role
   const location = useLocation()
 
@@ -41,31 +43,31 @@ function MainMenu({ collapsed }) {
   const hasRole = (roles) => roles.includes(role)
 
   const settingsChildren = [
-    hasRole(VIEW_ALL_ROLES) && createMenuItem("Оценочные параметры", ROUTES.EVALUATION_CRITERIA, <FileDoneOutlined />),
-    hasRole(VIEW_ALL_ROLES) && createMenuItem("Группы оценочных параметров", ROUTES.EVALUATION_CRITERIA_GROUPS, <FolderOpenOutlined />),
-    hasRole(['SuperAdmin']) && createMenuItem("Пользователи", ROUTES.USERS, <TeamOutlined />),
+    hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.evaluationCriteria'), ROUTES.EVALUATION_CRITERIA, <FileDoneOutlined />),
+    hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.evaluationCriteriaGroups'), ROUTES.EVALUATION_CRITERIA_GROUPS, <FolderOpenOutlined />),
+    hasRole(['SuperAdmin']) && createMenuItem(t('nav.users'), ROUTES.USERS, <TeamOutlined />),
   ].filter(Boolean)
 
   const menuItems = [
-    hasRole(ALL_ROLES) && createMenuItem("Результаты", ROUTES.RESULTS, <DatabaseOutlined />),
+    hasRole(ALL_ROLES) && createMenuItem(t('nav.results'), ROUTES.RESULTS, <DatabaseOutlined />),
     hasRole(ALL_ROLES) && {
       type: "group",
       children: [
-        createMenuItem("Абитуриенты", ROUTES.APPLICANTS, <IdcardOutlined />),
+        createMenuItem(t('nav.applicants'), ROUTES.APPLICANTS, <IdcardOutlined />),
       ]
     },
     hasRole(VIEW_ALL_ROLES) && {
       type: "group",
       children: [
-        hasRole(VIEW_ALL_ROLES) && createMenuItem("Факультеты", ROUTES.FACULTIES, <BankOutlined />),
-        createMenuItem("Кафедры", ROUTES.DEPARTMENTS, <BookOutlined />),
-        createMenuItem("Специальности", ROUTES.SPECIALTIES, <ToolOutlined />)
+        hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.faculties'), ROUTES.FACULTIES, <BankOutlined />),
+        createMenuItem(t('nav.departments'), ROUTES.DEPARTMENTS, <BookOutlined />),
+        createMenuItem(t('nav.specialties'), ROUTES.SPECIALTIES, <ToolOutlined />)
       ].filter(Boolean)
     },
     settingsChildren.length > 0 && {
       type: "group",
       children: [
-        createMenuItem("Настройки", "Settings", <SlidersOutlined />, settingsChildren)
+        createMenuItem(t('nav.settings'), "Settings", <SlidersOutlined />, settingsChildren)
       ]
     },
   ].filter(Boolean)

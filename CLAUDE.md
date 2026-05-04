@@ -119,3 +119,75 @@ faculties → departments → specialties
 - **user_specialty_access** — список специальностей, к которым пользователь имеет доступ (более гранулярный контроль, чем на уровне факультета).
 
   Оба списка передаются в JWT-токене (`facultyAccessIds`, `specialtyIds`) и используются фронтендом для фильтрации отображаемых данных.
+
+## Internationalization (i18n)
+
+The app supports Russian (default) and English. Language is stored in localStorage key `bntu_language`.
+
+### Frontend
+
+**Stack:** `react-i18next` + `i18next-browser-languagedetector`. Init file: `src/i18n/index.js`.
+
+**Translation files:**
+- `src/i18n/locales/ru/translation.json` — Russian strings
+- `src/i18n/locales/en/translation.json` — English strings
+
+**Key naming convention:** `domain.context.key`, e.g. `faculty.form.nameLabel`, `users.roles.SuperAdmin`.
+
+**Usage in components:**
+```jsx
+import { useTranslation } from "react-i18next"
+
+function MyComponent() {
+  const { t } = useTranslation()
+  return <label>{t('faculty.form.nameLabel')}</label>
+}
+```
+
+**Dynamic strings:** `t('key', { name: value })` — template uses `{{name}}` in JSON.
+
+**Language switcher:** `Segmented` (RU/EN) in `src/components/ContentHeader/index.jsx` next to the avatar; `Radio.Group` above the login form in `src/pages/Login.jsx`. Both use `useLanguage()` from `src/contexts/LanguageContext.jsx`.
+
+**Ant Design locale:** switched dynamically in `src/providers/GlobalProvider.jsx` via `useLanguage()` — `ruRU` / `enUS`.
+
+**Axios:** the request interceptor in `src/api/index.js` reads `localStorage.getItem('bntu_language')` directly (can't use React hooks in interceptors) and sends it as the `Accept-Language` header.
+
+### Backend
+
+**Stack:** built-in `Microsoft.Extensions.Localization`. No extra NuGet packages needed.
+
+**Resource files** (`Resources/`):
+- `SharedResources.cs` — empty marker class in namespace `bntuapplicants_backend`
+- `SharedResources.ru.resx` — Russian strings (default)
+- `SharedResources.en.resx` — English strings
+
+**Key naming convention:** `Domain.Context` (PascalCase), e.g. `Faculty.Name.Required`, `Faculty.NameExists`, `Faculty.NotFound`.
+
+**Usage in controllers** — inject `IStringLocalizer<SharedResources> _localizer` and cast explicitly when embedding in anonymous objects:
+```csharp
+private readonly IStringLocalizer<SharedResources> _localizer;
+
+public MyController(IStringLocalizer<SharedResources> localizer) { _localizer = localizer; }
+
+// Plain string:
+return NotFound(new { message = (string)_localizer["Faculty.NotFound", id] });
+
+// With format args (resx value uses {0}, {1}, ...):
+return BadRequest(new { message = (string)_localizer["ApplicantEvaluationValue.ValueOutOfRange", value, min, max, name] });
+```
+
+**DTO validation:** `ErrorMessage` attributes use resource keys (not Russian text). `DataAnnotationsLocalization` in `Program.cs` routes them through `SharedResources`:
+```csharp
+[Required(ErrorMessage = "Faculty.Name.Required")]
+[StringLength(100, ErrorMessage = "Faculty.Name.MaxLength100")]
+```
+
+**All error responses** must use `new { message = "..." }` shape so the frontend can read `err.response?.data?.message`.
+
+**Adding a new translatable string:**
+1. Add the key to both `SharedResources.ru.resx` and `SharedResources.en.resx`
+2. Use `(string)_localizer["Key"]` in the controller
+
+**Adding a new translatable frontend string:**
+1. Add the key to both `ru/translation.json` and `en/translation.json`
+2. Use `t('key')` in the component (import `useTranslation`)

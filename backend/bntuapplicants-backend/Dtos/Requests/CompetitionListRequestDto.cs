@@ -3,18 +3,18 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class CompetitionListRequestDto
     {
-        [Required(ErrorMessage = "Название конкурсного списка обязательно")]
-        [StringLength(255, ErrorMessage = "Название не должно превышать 255 символов")]
+        [Required(ErrorMessage = "CompetitionList.Name.Required")]
+        [StringLength(255, ErrorMessage = "CompetitionList.Name.MaxLength255")]
         public string Name { get; set; }
 
-        [Required(ErrorMessage = "План набора обязателен")]
-        [Range(1, int.MaxValue, ErrorMessage = "План набора должен быть натуральным числом")]
+        [Required(ErrorMessage = "CompetitionList.Plan.Required")]
+        [Range(1, int.MaxValue, ErrorMessage = "CompetitionList.Plan.Range")]
         public int Plan { get; set; }
 
-        [Required(ErrorMessage = "Id специальности обязателен")]
+        [Required(ErrorMessage = "CompetitionList.SpecialtyId.Required")]
         public int SpecialtyId { get; set; }
     }
 }

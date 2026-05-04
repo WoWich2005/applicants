@@ -5,6 +5,7 @@ using bntuapplicants_backend.Models;
 using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
@@ -17,17 +18,20 @@ namespace bntuapplicants_backend.Controllers
         private readonly IAdmissionCategoryRepository _admissionCategoryRepository;
         private readonly ICompetitionListRepository _competitionListRepository;
         private readonly SelectionService _selectionService;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public ApplicantAdmissionCategoryController(
             IApplicantAdmissionCategoryRepository repository,
             IAdmissionCategoryRepository admissionCategoryRepository,
             ICompetitionListRepository competitionListRepository,
-            SelectionService selectionService)
+            SelectionService selectionService,
+            IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _admissionCategoryRepository = admissionCategoryRepository;
             _competitionListRepository = competitionListRepository;
             _selectionService = selectionService;
+            _localizer = localizer;
         }
 
         private List<int>? GetOperatorSpecialtyIds()
@@ -100,7 +104,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось добавить категорию приема для абитуриента");
+                return StatusCode(500, new { message = (string)_localizer["ApplicantAdmissionCategory.CreateError"] });
 
             await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
 
@@ -121,7 +125,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Запись с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
 
             if (!await HasSpecialtyAccessAsync(dto.AdmissionCategoryId))
                 return Forbid();
@@ -135,7 +139,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении записи");
+                return StatusCode(500, new { message = (string)_localizer["Record.UpdateError"] });
 
             await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
             if (existing.ApplicantId != dto.ApplicantId)
@@ -153,14 +157,14 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Запись с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
 
             if (!await HasSpecialtyAccessAsync(existing.AdmissionCategoryId))
                 return Forbid();
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении записи");
+                return StatusCode(500, new { message = (string)_localizer["Record.DeleteError"] });
 
             await _selectionService.RecalculateForApplicantAsync(existing.ApplicantId);
 

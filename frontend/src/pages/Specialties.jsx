@@ -11,9 +11,11 @@ import SpecialtyForm from '../components/Forms/SpecialtyForm'
 import { generatePath } from 'react-router'
 import { ROUTES } from '../constants/routes'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 function Specialties() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
   const [messageApi, contextHolder] = useMessage()
   const [departments, setDepartments] = useState(/** @type {Record<number, any>} */ ({}))
@@ -35,7 +37,7 @@ function Specialties() {
           return acc
         }, {}))
       } catch {
-        messageApi.error("Ошибка получения данных с сервера")
+        messageApi.error(t('specialty.fetchError'))
       }
     }
 
@@ -53,14 +55,13 @@ function Specialties() {
     return (
       <>
         <Typography.Paragraph>
-          Невозможно удалить специальность <strong>"{specialty?.name}"</strong>, так как к ней привязаны конкурсные списки.
-          Сначала удалите следующие конкурсные списки:
+          {t('specialty.deleteBlocked', { name: specialty?.name })}
         </Typography.Paragraph>
         <List
           size="small"
           dataSource={visible}
           renderItem={(list) => <List.Item>{list.name}</List.Item>}
-          footer={remaining > 0 ? <Typography.Text type="secondary">и ещё {remaining} конкурсных списков</Typography.Text> : null}
+          footer={remaining > 0 ? <Typography.Text type="secondary">{t('specialty.andMoreLists', { count: remaining })}</Typography.Text> : null}
         />
       </>
     )
@@ -70,8 +71,8 @@ function Specialties() {
     <>
       {contextHolder}
       <Title
-        title="Специальности"
-        helpText={<>Здесь Вы можете создать специальности для конкретной кафедры</>}
+        title={t('specialty.title')}
+        helpText={t('specialty.helpText')}
       />
 
       <CrudTable
@@ -88,20 +89,20 @@ function Specialties() {
         getDeleteBlockers={getDeleteBlockers}
         renderDeleteBlockersContent={renderDeleteBlockersContent}
 
-        addButtonTitle="Новая специальность"
-        renderEditTitle={(/** @type {any} */ el) => `Редактирование специальности "${el?.name}"`}
-        renderDeleteText={(/** @type {any} */ el) => `Удалить специальность "${el?.name}"?`}
+        addButtonTitle={t('specialty.addButton')}
+        renderEditTitle={(/** @type {any} */ el) => t('specialty.editTitle', { name: el?.name })}
+        renderDeleteText={(/** @type {any} */ el) => t('specialty.deleteText', { name: el?.name })}
 
         columns={[
           {
-            title: "Имя специальности",
+            title: t('specialty.colName'),
             dataIndex: "name",
             key: "name",
             withSearch: true,
             sorter: true
           },
           {
-            title: "Факультет",
+            title: t('specialty.colFaculty'),
             dataIndex: 'departmentId',
             key: 'facultyId',
             width: "200px",
@@ -112,7 +113,7 @@ function Specialties() {
             render: (/** @type {any} */ _, /** @type {any} */ el) => faculties[departments[el.departmentId]?.facultyId]?.name ?? ''
           },
           {
-            title: "Кафедра",
+            title: t('specialty.colDepartment'),
             dataIndex: 'departmentId',
             key: 'departmentId',
             width: "200px",

@@ -4,6 +4,7 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
@@ -14,11 +15,13 @@ namespace bntuapplicants_backend.Controllers
     {
         private readonly IUserRepository _userRepo;
         private readonly JwtService _jwtService;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public AuthController(IUserRepository userRepo, JwtService jwtService)
+        public AuthController(IUserRepository userRepo, JwtService jwtService, IStringLocalizer<SharedResources> localizer)
         {
             _userRepo = userRepo;
             _jwtService = jwtService;
+            _localizer = localizer;
         }
 
         [HttpPost("login")]
@@ -27,10 +30,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var user = await _userRepo.GetByUsernameAsync(dto.Username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-                return Unauthorized(new { message = "Неверный логин или пароль" });
+                return Unauthorized(new { message = (string)_localizer["Auth.InvalidCredentials"] });
 
             if (!user.IsActive)
-                return Unauthorized(new { message = "Аккаунт деактивирован" });
+                return Unauthorized(new { message = (string)_localizer["Auth.AccountDeactivated"] });
 
             var specialtyIds = await _userRepo.GetSpecialtyIdsAsync(user.Id);
             var facultyAccessIds = await _userRepo.GetFacultyAccessIdsAsync(user.Id);
@@ -56,7 +59,7 @@ namespace bntuapplicants_backend.Controllers
             if (user == null) return NotFound();
 
             if (!BCrypt.Net.BCrypt.Verify(dto.CurrentPassword, user.PasswordHash))
-                return BadRequest(new { message = "Неверный текущий пароль" });
+                return BadRequest(new { message = (string)_localizer["Auth.WrongCurrentPassword"] });
 
             var newHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
             await _userRepo.ChangePasswordAsync(userId, newHash);

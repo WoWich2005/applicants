@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router'
 import AppRouter from './AppRouter'
 import 'normalize.css'
 import './styles/common.scss'
+import './i18n/index.js'
 import GlobalProvider from './providers/GlobalProvider'
 import { AuthProvider } from './contexts/AuthContext'
 

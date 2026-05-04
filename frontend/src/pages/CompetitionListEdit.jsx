@@ -13,9 +13,11 @@ import { applicantAdmissionCategoriesApi } from "../api/applicantAdmissionCatego
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { specialtiesApi } from "../api/specialtiesApi"
 import { useAuth } from "../contexts/AuthContext"
+import { useTranslation } from "react-i18next"
 
 function CompetitionListEdit() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
   const [messageApi, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -36,7 +38,7 @@ function CompetitionListEdit() {
           return acc
         }, {}))
       } catch {
-        messageApi.error("Ошибка получения данных с сервера")
+        messageApi.error(t('competitionList.edit.fetchError'))
       }
     }
 
@@ -81,7 +83,7 @@ function CompetitionListEdit() {
       <Result
         status="404"
         title="404"
-        subTitle="Такого конкурсного списка не существует"
+        subTitle={t('competitionList.edit.notFound')}
       />
     )
   } else if (responseStatus === 500) {
@@ -89,7 +91,7 @@ function CompetitionListEdit() {
       <Result
         status="500"
         title="500"
-        subTitle="Ошибка сервера"
+        subTitle={t('competitionList.edit.serverError')}
       />
     )
   }
@@ -109,14 +111,14 @@ function CompetitionListEdit() {
   const renderDeleteBlockersContent = (category, blockers) => (
     <>
       <Typography.Paragraph>
-        Невозможно удалить категорию приема <strong>"{category?.name}"</strong>. Заявки с данной категорией есть у следующих абитуриентов:
+        {t('admissionCategory.deleteBlocked', { name: category?.name })}
       </Typography.Paragraph>
       <List
         size="small"
         dataSource={blockers.applicants}
         renderItem={(applicant) => <List.Item>{applicant.name}</List.Item>}
         footer={blockers.totalCount > 5
-          ? <Typography.Text type="secondary">и ещё {blockers.totalCount - 5} абитуриентов</Typography.Text>
+          ? <Typography.Text type="secondary">{t('admissionCategory.andMoreApplicants', { count: blockers.totalCount - 5 })}</Typography.Text>
           : null}
       />
     </>
@@ -125,7 +127,7 @@ function CompetitionListEdit() {
   const tabs = [
     {
       key: "data",
-      label: "Данные списка",
+      label: t('competitionList.edit.tabData'),
       children: (
         <CompetitionListForm
           initialValues={list}
@@ -137,7 +139,7 @@ function CompetitionListEdit() {
     },
     {
       key: "categories",
-      label: "Категории приема",
+      label: t('competitionList.edit.tabCategories'),
       children: (
         <CrudTable
           elementForm={AdmissionCategoryForm}
@@ -152,27 +154,27 @@ function CompetitionListEdit() {
           getDeleteBlockers={getDeleteBlockers}
           renderDeleteBlockersContent={renderDeleteBlockersContent}
 
-          addButtonTitle="Добавить категорию приема"
-          renderEditTitle={() => `Редактирование категории приема`}
-          renderDeleteText={() => `Удалить категорию приема?`}
+          addButtonTitle={t('admissionCategory.addButton')}
+          renderEditTitle={() => t('admissionCategory.editTitle')}
+          renderDeleteText={() => t('admissionCategory.deleteText')}
 
           columns={[
             {
-              title: "Приоритет",
+              title: t('admissionCategory.colPriority'),
               dataIndex: "priority",
               key: "priority",
               width: 120,
               sorter: true
             },
             {
-              title: "Название категории",
+              title: t('admissionCategory.colName'),
               dataIndex: "name",
               key: "name",
               withSearch: true,
               sorter: true
             },
             {
-              title: "Группа оценочных параметров",
+              title: t('admissionCategory.colGroup'),
               dataIndex: "evaluationCriteriaGroupId",
               key: "evaluationCriteriaGroupId",
               filters: Object.values(groupsDict).map(g => ({ text: g.name, value: g.id })),
@@ -182,7 +184,7 @@ function CompetitionListEdit() {
               sorter: true
             },
             {
-              title: "Квота",
+              title: t('admissionCategory.colQuota'),
               dataIndex: "quota",
               key: "quota",
               sorter: true
@@ -199,13 +201,13 @@ function CompetitionListEdit() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <Link to={ROUTES.SPECIALTIES}>Специальности</Link> },
+          { title: <Link to={ROUTES.SPECIALTIES}>{t('specialty.edit.breadcrumb')}</Link> },
           { title: <Link to={generatePath(ROUTES.SPECIALTY_EDIT, { specialtyId: list.specialtyId })}>{specialtyName ?? "..."}</Link> },
-          { title: <Link to={`${generatePath(ROUTES.SPECIALTY_EDIT, { specialtyId: list.specialtyId })}?act=competition-lists`}>Конкурсные списки</Link> },
+          { title: <Link to={`${generatePath(ROUTES.SPECIALTY_EDIT, { specialtyId: list.specialtyId })}?act=competition-lists`}>{t('competitionList.edit.breadcrumb')}</Link> },
           { title: list.name },
         ]}
       />
-      <Title title={readOnly ? "Просмотр конкурсного списка" : "Редактирование конкурсного списка"} />
+      <Title title={readOnly ? t('competitionList.edit.titleView') : t('competitionList.edit.titleEdit')} />
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}

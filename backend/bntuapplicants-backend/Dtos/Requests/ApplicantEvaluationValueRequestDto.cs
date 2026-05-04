@@ -3,17 +3,17 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class ApplicantEvaluationValueRequestDto
     {
-        [Required(ErrorMessage = "Id абитуриента обязателен")]
+        [Required(ErrorMessage = "ApplicantEvaluationValue.ApplicantId.Required")]
         public int ApplicantId { get; set; }
 
-        [Required(ErrorMessage = "Id оценочного параметра обязателен")]
+        [Required(ErrorMessage = "ApplicantEvaluationValue.EvaluationCriteriaId.Required")]
         public int EvaluationCriteriaId { get; set; }
 
-        [Required(ErrorMessage = "Значение параметра обязательно")]
-        [Range(1, int.MaxValue, ErrorMessage = "Значение должно быть натуральным числом")]
+        [Required(ErrorMessage = "ApplicantEvaluationValue.Value.Required")]
+        [Range(1, int.MaxValue, ErrorMessage = "ApplicantEvaluationValue.Value.Range")]
         public int Value { get; set; }
     }
 }

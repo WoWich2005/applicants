@@ -2,10 +2,12 @@ import { Button, Form, Input, message, Space } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { applicantsApi } from "../../api/applicantsApi"
+import { useTranslation } from "react-i18next"
 
 const { TextArea } = Input
 
 function ApplicantForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -35,7 +37,7 @@ function ApplicantForm(props) {
       form.resetFields()
     } catch (err) {
       const serverMessage = err?.response?.data?.message
-      messageApi.error(serverMessage ?? "Ошибка сохранения данных абитуриента")
+      messageApi.error(serverMessage ?? t('applicant.form.saveError'))
       console.log(err)
     } finally {
       setIsLoading(false)
@@ -61,16 +63,16 @@ function ApplicantForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="ID (номер паспорта, ID карты или любое другое уникальное значение)"
+              label={t('applicant.form.idLabel')}
               name="externalId"
               rules={[
                 {
                   required: true,
-                  message: "ID абитуриента обязателен для заполнения",
+                  message: t('applicant.form.idRequired'),
                 },
                 {
                   max: 255,
-                  message: "ID не должен превышать 255 символов",
+                  message: t('applicant.form.idMaxLength'),
                 }
               ]}
             >
@@ -81,12 +83,12 @@ function ApplicantForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Имя абитуриента"
+              label={t('applicant.form.nameLabel')}
               name="name"
               rules={[
                 {
                   required: true,
-                  message: "Имя абитуриента обязательно для заполнения",
+                  message: t('applicant.form.nameRequired'),
                 }
               ]}
             >
@@ -97,7 +99,7 @@ function ApplicantForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Заметки"
+              label={t('applicant.form.notesLabel')}
               name="notes"
             >
               <TextArea rows={4} />
@@ -108,7 +110,7 @@ function ApplicantForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить данные абитуриента' : 'Добавить абитуриента'}
+                {props.elementId ? t('applicant.form.updateButton') : t('applicant.form.addButton')}
               </Button>
             )}
             {props.buttons}

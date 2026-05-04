@@ -8,9 +8,11 @@ import { specialtiesApi } from '../api/specialtiesApi'
 import { useEffect, useState } from 'react'
 import useMessage from 'antd/es/message/useMessage'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 function Departments() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
   const [messageApi, contextHolder] = useMessage()
   const [faculties, setFaculties] = useState({})
@@ -24,7 +26,7 @@ function Departments() {
           return acc
         }, {}))
       } catch {
-        messageApi.error("Ошибка получения данных с сервера")
+        messageApi.error(t('department.fetchError'))
       }
     }
 
@@ -42,14 +44,13 @@ function Departments() {
     return (
       <>
         <Typography.Paragraph>
-          Невозможно удалить кафедру <strong>"{department?.name}"</strong>, так как к ней привязаны специальности.
-          Сначала удалите следующие специальности:
+          {t('department.deleteBlocked', { name: department?.name })}
         </Typography.Paragraph>
         <List
           size="small"
           dataSource={visible}
           renderItem={(specialty) => <List.Item>{specialty.name}</List.Item>}
-          footer={remaining > 0 ? <Typography.Text type="secondary">и ещё {remaining} специальностей</Typography.Text> : null}
+          footer={remaining > 0 ? <Typography.Text type="secondary">{t('department.andMoreSpecs', { count: remaining })}</Typography.Text> : null}
         />
       </>
     )
@@ -59,8 +60,8 @@ function Departments() {
     <>
       {contextHolder}
       <Title
-        title="Кафедры"
-        helpText={<>Здесь Вы можете создать кафедры для конкретного факультета</>}
+        title={t('department.title')}
+        helpText={t('department.helpText')}
       />
 
       <CrudTable
@@ -74,20 +75,20 @@ function Departments() {
         getDeleteBlockers={getDeleteBlockers}
         renderDeleteBlockersContent={renderDeleteBlockersContent}
 
-        addButtonTitle="Новая кафедра"
-        renderEditTitle={(/** @type {any} */ el) => `Редактирование кафедры "${el?.name}"`}
-        renderDeleteText={(/** @type {any} */ el) => `Удалить кафедру "${el?.name}"?`}
+        addButtonTitle={t('department.addButton')}
+        renderEditTitle={(/** @type {any} */ el) => t('department.editTitle', { name: el?.name })}
+        renderDeleteText={(/** @type {any} */ el) => t('department.deleteText', { name: el?.name })}
 
         columns={[
           {
-            title: "Название кафедры",
+            title: t('department.colName'),
             dataIndex: "name",
             key: "name",
             withSearch: true,
             sorter: true
           },
           {
-            title: "Факультет",
+            title: t('department.colFaculty'),
             dataIndex: "facultyId",
             key: "facultyId",
             sorter: true,

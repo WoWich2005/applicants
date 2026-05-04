@@ -18,6 +18,7 @@ instance.interceptors.request.use((config) => {
   } catch {
     // ignore
   }
+  config.headers['Accept-Language'] = localStorage.getItem('bntu_language') ?? 'ru'
   return config
 })
 

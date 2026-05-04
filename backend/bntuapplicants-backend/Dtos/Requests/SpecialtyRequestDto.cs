@@ -1,16 +1,16 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class SpecialtyRequestDto
     {
-        [Required(ErrorMessage = "Имя специальности обязательно")]
-        [StringLength(100, ErrorMessage = "Имя специальности не должно превышать 100 символов")]
+        [Required(ErrorMessage = "Specialty.Name.Required")]
+        [StringLength(100, ErrorMessage = "Specialty.Name.MaxLength100")]
         public string Name { get; set; }
 
-        [Required(ErrorMessage = "Специальность должна принадлежать кафедре")]
+        [Required(ErrorMessage = "Specialty.DepartmentId.Required")]
         public int DepartmentId { get; set; }
     }
 }

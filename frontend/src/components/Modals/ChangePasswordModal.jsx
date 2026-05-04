@@ -1,8 +1,10 @@
 import { Button, Form, Input, message, Modal } from 'antd'
 import { useState } from 'react'
 import { authApi } from '../../api/authApi'
+import { useTranslation } from 'react-i18next'
 
 function ChangePasswordModal({ open, onClose }) {
+  const { t } = useTranslation()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [messageApi, contextHolder] = message.useMessage()
@@ -14,11 +16,11 @@ function ChangePasswordModal({ open, onClose }) {
         currentPassword: values.currentPassword,
         newPassword: values.newPassword,
       })
-      messageApi.success('Пароль успешно изменён')
+      messageApi.success(t('auth.changePassword.success'))
       form.resetFields()
       onClose()
     } catch (err) {
-      messageApi.error(err.response?.data?.message || 'Ошибка смены пароля')
+      messageApi.error(err.response?.data?.message || t('auth.changePassword.error'))
     } finally {
       setLoading(false)
     }
@@ -29,7 +31,7 @@ function ChangePasswordModal({ open, onClose }) {
       {contextHolder}
       <Modal
         open={open}
-        title="Смена пароля"
+        title={t('auth.changePassword.title')}
         footer={null}
         onCancel={onClose}
         destroyOnClose
@@ -37,32 +39,32 @@ function ChangePasswordModal({ open, onClose }) {
         <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 16 }}>
           <Form.Item
             name="currentPassword"
-            label="Текущий пароль"
-            rules={[{ required: true, message: 'Введите текущий пароль' }]}
+            label={t('auth.changePassword.currentPassword')}
+            rules={[{ required: true, message: t('auth.changePassword.currentPasswordRequired') }]}
           >
             <Input.Password />
           </Form.Item>
           <Form.Item
             name="newPassword"
-            label="Новый пароль"
+            label={t('auth.changePassword.newPassword')}
             rules={[
-              { required: true, message: 'Введите новый пароль' },
-              { min: 6, message: 'Минимум 6 символов' },
+              { required: true, message: t('auth.changePassword.newPasswordRequired') },
+              { min: 6, message: t('auth.changePassword.minLength') },
             ]}
           >
             <Input.Password />
           </Form.Item>
           <Form.Item
             name="confirmPassword"
-            label="Подтвердите новый пароль"
+            label={t('auth.changePassword.confirmPassword')}
             dependencies={['newPassword']}
             rules={[
-              { required: true, message: 'Подтвердите пароль' },
+              { required: true, message: t('auth.changePassword.confirmRequired') },
               ({ getFieldValue }) => ({
                 validator(_, value) {
                   if (!value || getFieldValue('newPassword') === value)
                     return Promise.resolve()
-                  return Promise.reject(new Error('Пароли не совпадают'))
+                  return Promise.reject(new Error(t('auth.changePassword.passwordMismatch')))
                 },
               }),
             ]}
@@ -70,9 +72,9 @@ function ChangePasswordModal({ open, onClose }) {
             <Input.Password />
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-            <Button onClick={onClose} style={{ marginRight: 8 }}>Отмена</Button>
+            <Button onClick={onClose} style={{ marginRight: 8 }}>{t('common.cancel')}</Button>
             <Button type="primary" htmlType="submit" loading={loading}>
-              Сохранить
+              {t('auth.changePassword.save')}
             </Button>
           </Form.Item>
         </Form>

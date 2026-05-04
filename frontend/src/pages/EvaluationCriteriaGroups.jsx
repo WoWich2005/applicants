@@ -6,10 +6,13 @@ import EvaluationCriteriaGroupForm from '../components/Forms/EvaluationCriteriaG
 import { ROUTES } from "../constants/routes"
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 function EvaluationCriteriaGroups() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
+
   const getDeleteBlockers = async (/** @type {any} */ group) => {
     const response = await evaluationCriteriaGroupsApi.getDeleteCheck(group.id)
     return response.data.length > 0 ? response.data : null
@@ -21,7 +24,7 @@ function EvaluationCriteriaGroups() {
     return (
       <>
         <Typography.Paragraph>
-          Невозможно удалить группу <strong>"{group?.name}"</strong>, так как она используется в следующих категориях приема:
+          {t('evaluationCriteriaGroup.deleteBlocked', { name: group?.name })}
         </Typography.Paragraph>
         <List
           size="small"
@@ -31,7 +34,7 @@ function EvaluationCriteriaGroups() {
               {item.facultyName} — {item.departmentName} — {item.specialtyName} — {item.competitionListName} — {item.admissionCategoryName}
             </List.Item>
           )}
-          footer={remaining > 0 ? <Typography.Text type="secondary">и ещё {remaining} категорий приема</Typography.Text> : null}
+          footer={remaining > 0 ? <Typography.Text type="secondary">{t('evaluationCriteriaGroup.andMoreCategories', { count: remaining })}</Typography.Text> : null}
         />
       </>
     )
@@ -40,8 +43,8 @@ function EvaluationCriteriaGroups() {
   return (
     <>
       <Title
-        title="Группы оценочных параметров"
-        helpText={<>Здесь Вы можете создать новые группы оценочных параметров</>}
+        title={t('evaluationCriteriaGroup.title')}
+        helpText={t('evaluationCriteriaGroup.helpText')}
       />
 
       <CrudTable
@@ -58,13 +61,13 @@ function EvaluationCriteriaGroups() {
         getDeleteBlockers={getDeleteBlockers}
         renderDeleteBlockersContent={renderDeleteBlockersContent}
 
-        addButtonTitle="Новая группа оценочных параметров"
-        renderEditTitle={(/** @type {any} */ el) => `Редактирование группы "${el?.name}"`}
-        renderDeleteText={(/** @type {any} */ el) => `Удалить группу "${el?.name}"?`}
+        addButtonTitle={t('evaluationCriteriaGroup.addButton')}
+        renderEditTitle={(/** @type {any} */ el) => t('evaluationCriteriaGroup.editTitle', { name: el?.name })}
+        renderDeleteText={(/** @type {any} */ el) => t('evaluationCriteriaGroup.deleteText', { name: el?.name })}
 
         columns={[
           {
-            title: "Название",
+            title: t('evaluationCriteriaGroup.colName'),
             dataIndex: "name",
             key: "name",
             withSearch: true,

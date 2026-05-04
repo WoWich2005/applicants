@@ -4,8 +4,10 @@ import { useEffect, useState } from "react"
 import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
 import { useAuth } from "../../contexts/AuthContext"
+import { useTranslation } from "react-i18next"
 
 function DepartmentForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -26,7 +28,7 @@ function DepartmentForm(props) {
         setFaculties(response.data)
         setIsFacultiesLoading(false)
       } catch {
-        messageApi.error("Не удалось получить список факультетов")
+        messageApi.error(t('department.form.fetchFacultiesError'))
       }
     }
 
@@ -66,7 +68,7 @@ function DepartmentForm(props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка сохранения кафедры на сервере"
+          : t('department.form.saveError')
       )
       console.log(err)
     } finally {
@@ -93,17 +95,17 @@ function DepartmentForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Название кафедры"
+              label={t('department.form.nameLabel')}
               name="name"
-              rules={[{ required: true, message: "Название кафедры обязательно для заполнения" }]}
+              rules={[{ required: true, message: t('department.form.nameRequired') }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              label="Факультет"
+              label={t('department.form.facultyLabel')}
               name="facultyId"
-              rules={[{ required: true, message: "Кафедра должна принадлежать факультету" }]}
+              rules={[{ required: true, message: t('department.form.facultyRequired') }]}
             >
               <Select disabled={isFacultyManager || !!props.readOnly}>
                 {faculties.map(faculty => (
@@ -119,7 +121,7 @@ function DepartmentForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить кафедру' : 'Добавить кафедру'}
+                {props.elementId ? t('department.form.updateButton') : t('department.form.addButton')}
               </Button>
             )}
             {props.buttons}

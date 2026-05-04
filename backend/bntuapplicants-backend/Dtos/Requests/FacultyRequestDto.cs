@@ -1,13 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class FacultyRequestDto
     {
-        [Required(ErrorMessage = "Название факультета обязательно")]
-        [StringLength(100, ErrorMessage = "Название не должно превышать 100 символов")]
+        [Required(ErrorMessage = "Faculty.Name.Required")]
+        [StringLength(100, ErrorMessage = "Faculty.Name.MaxLength100")]
         public string Name { get; set; }
     }
 }

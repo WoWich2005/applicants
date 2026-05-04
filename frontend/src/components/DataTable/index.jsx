@@ -2,8 +2,10 @@ import { SearchOutlined } from "@ant-design/icons"
 import { Button, Input, Space, Table } from "antd"
 import { useRef, useState } from "react"
 import Highlighter from "react-highlight-words"
+import { useTranslation } from "react-i18next"
 
 function DataTable(props) {
+  const { t } = useTranslation()
   const [searchText, setSearchText] = useState('')
   const [searchedColumn, setSearchedColumn] = useState('')
   const searchInput = useRef(null)
@@ -25,7 +27,7 @@ function DataTable(props) {
       <div style={{ padding: 8 }} onKeyDown={e => e.stopPropagation()}>
         <Input
           ref={searchInput}
-          placeholder={`Поиск...`}
+          placeholder={t('dataTable.searchPlaceholder')}
           value={selectedKeys[0]}
           onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
           onPressEnter={() => handleSearch(selectedKeys, confirm, dataIndex)}
@@ -39,21 +41,21 @@ function DataTable(props) {
             size="small"
             style={{ width: 90 }}
           >
-            Найти
+            {t('dataTable.find')}
           </Button>
           <Button
             onClick={() => clearFilters && handleReset(clearFilters)}
             size="small"
             style={{ width: 90 }}
           >
-            Сбросить
+            {t('dataTable.reset')}
           </Button>
           <Button
             type="link"
             size="small"
             onClick={() => close()}
           >
-            Закрыть
+            {t('dataTable.close')}
           </Button>
         </Space>
       </div>

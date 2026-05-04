@@ -11,9 +11,11 @@ import CompetitionListSimpleForm from "../components/Forms/CompetitionListSimple
 import CrudTable from "../components/CrudTable"
 import { ROUTES } from "../constants/routes"
 import { useAuth } from "../contexts/AuthContext"
+import { useTranslation } from "react-i18next"
 
 function SpecialtyEdit() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
   const [messageApi, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -54,7 +56,7 @@ function SpecialtyEdit() {
       <Result
         status="404"
         title="404"
-        subTitle="Такой специальности не существует"
+        subTitle={t('specialty.edit.notFound')}
       />
     )
   } else if (responseStatus === 500) {
@@ -62,7 +64,7 @@ function SpecialtyEdit() {
       <Result
         status="500"
         title="500"
-        subTitle="Ошибка сервера"
+        subTitle={t('specialty.edit.serverError')}
       />
     )
   }
@@ -78,14 +80,13 @@ function SpecialtyEdit() {
     return (
       <>
         <Typography.Paragraph>
-          Невозможно удалить конкурсный список <strong>"{competitionList?.name}"</strong>, так как к нему привязаны категории приема.
-          Сначала удалите следующие категории приема:
+          {t('competitionList.deleteBlocked', { name: competitionList?.name })}
         </Typography.Paragraph>
         <List
           size="small"
           dataSource={visible}
           renderItem={(category) => <List.Item>{category.name}</List.Item>}
-          footer={remaining > 0 ? <Typography.Text type="secondary">и ещё {remaining} категорий приема</Typography.Text> : null}
+          footer={remaining > 0 ? <Typography.Text type="secondary">{t('competitionList.andMoreCategories', { count: remaining })}</Typography.Text> : null}
         />
       </>
     )
@@ -99,7 +100,7 @@ function SpecialtyEdit() {
   const tabs = [
     {
       key: "data",
-      label: "Данные специальности",
+      label: t('specialty.edit.tabData'),
       children: (
         <SpecialtyForm
           initialValues={specialty}
@@ -111,7 +112,7 @@ function SpecialtyEdit() {
     },
     {
       key: "competition-lists",
-      label: "Конкурсные списки",
+      label: t('specialty.edit.tabCompetitionLists'),
       children: (
         <CrudTable
           elementForm={CompetitionListSimpleForm}
@@ -129,20 +130,20 @@ function SpecialtyEdit() {
           getDeleteBlockers={getDeleteBlockers}
           renderDeleteBlockersContent={renderDeleteBlockersContent}
 
-          addButtonTitle="Добавить конкурсный список"
-          renderEditTitle={(el) => `Редактирование конкурсного списка "${el?.name}"`}
-          renderDeleteText={(el) => `Удалить конкурсный список "${el?.name}"?`}
+          addButtonTitle={t('competitionList.addButton')}
+          renderEditTitle={(el) => t('competitionList.editTitle', { name: el?.name })}
+          renderDeleteText={(el) => t('competitionList.deleteText', { name: el?.name })}
 
           columns={[
             {
-              title: "Название",
+              title: t('competitionList.colName'),
               dataIndex: "name",
               key: "name",
               withSearch: true,
               sorter: true
             },
             {
-              title: "План набора",
+              title: t('competitionList.colPlan'),
               dataIndex: "plan",
               key: "plan",
               sorter: true
@@ -159,11 +160,11 @@ function SpecialtyEdit() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <Link to={ROUTES.SPECIALTIES}>Специальности</Link> },
+          { title: <Link to={ROUTES.SPECIALTIES}>{t('specialty.edit.breadcrumb')}</Link> },
           { title: specialty.name },
         ]}
       />
-      <Title title={readOnly ? "Просмотр специальности" : "Редактирование специальности"} />
+      <Title title={readOnly ? t('specialty.edit.titleView') : t('specialty.edit.titleEdit')} />
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}

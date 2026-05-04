@@ -8,8 +8,10 @@ import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
 import { competitionListsApi } from "../../api/competitionListsApi"
 import { useAuth } from "../../contexts/AuthContext"
+import { useTranslation } from "react-i18next"
 
 function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -52,7 +54,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
         setFaculties(response.data)
         setIsFacultiesLoading(false)
       } catch {
-        messageApi.error("Не удалось получить список факультетов")
+        messageApi.error(t('applicantAdmissionCategory.form.fetchFacultiesError'))
       }
     }
 
@@ -80,7 +82,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
           facultyIds: new Set(depts.map(d => d.facultyId)),
         })
       } catch {
-        messageApi.error("Не удалось загрузить данные доступных специальностей")
+        messageApi.error(t('applicantAdmissionCategory.form.fetchAllowedSetsError'))
       } finally {
         setIsAllowedSetsLoading(false)
       }
@@ -97,7 +99,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
     setIsDepartmentsLoading(true)
     departmentsApi.getByFacultyId(managerFacultyId)
       .then(r => setDepartments(r.data))
-      .catch(() => messageApi.error("Не удалось получить список кафедр"))
+      .catch(() => messageApi.error(t('applicantAdmissionCategory.form.fetchDepartmentsError')))
       .finally(() => setIsDepartmentsLoading(false))
   }, [isFacultiesLoading])
 
@@ -129,7 +131,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
 
         form.setFieldsValue({ ...props.initialValues, applicantId: props.applicantId })
       } catch {
-        messageApi.error("Не удалось восстановить данные формы")
+        messageApi.error(t('applicantAdmissionCategory.form.restoreError'))
       }
     }
 
@@ -160,7 +162,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       const loaded = response.data
       setDepartments(allowedSets ? loaded.filter(d => allowedSets.departmentIds.has(d.id)) : loaded)
     } catch {
-      messageApi.error("Не удалось получить список кафедр")
+      messageApi.error(t('applicantAdmissionCategory.form.fetchDepartmentsError'))
     } finally {
       setIsDepartmentsLoading(false)
     }
@@ -182,7 +184,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       const loaded = response.data
       setSpecialties(allowedSets ? loaded.filter(s => allowedSets.specialtyIds.has(s.id)) : loaded)
     } catch {
-      messageApi.error("Не удалось получить список специальностей")
+      messageApi.error(t('applicantAdmissionCategory.form.fetchSpecialtiesError'))
     } finally {
       setIsSpecialtiesLoading(false)
     }
@@ -201,7 +203,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       const [_, response] = await Promise.all([delayPromise, competitionListsApi.getBySpecialtyId(specialtyId)])
       setCompetitionLists(response.data)
     } catch {
-      messageApi.error("Не удалось получить список конкурсных списков")
+      messageApi.error(t('applicantAdmissionCategory.form.fetchCompetitionListsError'))
     } finally {
       setIsCompetitionListsLoading(false)
     }
@@ -218,7 +220,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       const [_, response] = await Promise.all([delayPromise, admissionCategoriesApi.getAllByCompetitionList(competitionListId)])
       setCategories(response.data)
     } catch {
-      messageApi.error("Не удалось получить список категорий приема")
+      messageApi.error(t('applicantAdmissionCategory.form.fetchCategoriesError'))
     } finally {
       setIsCategoriesLoading(false)
     }
@@ -256,9 +258,9 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       if ('response' in err && err.response.status === 400) {
         messageApi.error(err.response.data)
       } else if ('response' in err && err.response.status === 403) {
-        messageApi.error("Нет доступа к выбранной специальности")
+        messageApi.error(t('applicantAdmissionCategory.form.accessError'))
       } else {
-        messageApi.error("Ошибка сохранения данных на сервере")
+        messageApi.error(t('applicantAdmissionCategory.form.saveError'))
       }
     } finally {
       setIsLoading(false)
@@ -289,11 +291,11 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       >
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
-            <Form.Item label="Факультет">
+            <Form.Item label={t('applicantAdmissionCategory.form.facultyLabel')}>
               <Select
                 value={selectedFacultyId}
                 onChange={handleFacultyChange}
-                placeholder="Выберите факультет"
+                placeholder={t('applicantAdmissionCategory.form.facultyPlaceholder')}
                 disabled={isFacultyManager || !!props.readOnly}
               >
                 {visibleFaculties.map(faculty => (
@@ -306,11 +308,11 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
 
             {selectedFacultyId && (
               isDepartmentsLoading ? <Skeleton paragraph={{ rows: 1 }} active /> : (
-                <Form.Item label="Кафедра">
+                <Form.Item label={t('applicantAdmissionCategory.form.departmentLabel')}>
                   <Select
                     value={selectedDepartmentId}
                     onChange={handleDepartmentChange}
-                    placeholder="Выберите кафедру"
+                    placeholder={t('applicantAdmissionCategory.form.departmentPlaceholder')}
                   >
                     {departments.map(d => (
                       <Select.Option value={d.id} key={d.id}>{d.name}</Select.Option>
@@ -322,11 +324,11 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
 
             {selectedDepartmentId && (
               isSpecialtiesLoading ? <Skeleton paragraph={{ rows: 1 }} active /> : (
-                <Form.Item label="Специальность">
+                <Form.Item label={t('applicantAdmissionCategory.form.specialtyLabel')}>
                   <Select
                     value={selectedSpecialtyId}
                     onChange={handleSpecialtyChange}
-                    placeholder="Выберите специальность"
+                    placeholder={t('applicantAdmissionCategory.form.specialtyPlaceholder')}
                   >
                     {specialties.map(s => (
                       <Select.Option value={s.id} key={s.id}>{s.name}</Select.Option>
@@ -338,11 +340,11 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
 
             {selectedSpecialtyId && (
               isCompetitionListsLoading ? <Skeleton paragraph={{ rows: 1 }} active /> : (
-                <Form.Item label="Конкурсный список">
+                <Form.Item label={t('applicantAdmissionCategory.form.competitionListLabel')}>
                   <Select
                     value={selectedCompetitionListId}
                     onChange={handleCompetitionListChange}
-                    placeholder="Выберите конкурсный список"
+                    placeholder={t('applicantAdmissionCategory.form.competitionListPlaceholder')}
                   >
                     {competitionLists.map(cl => (
                       <Select.Option value={cl.id} key={cl.id}>{cl.name}</Select.Option>
@@ -355,11 +357,11 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
             {selectedCompetitionListId && (
               isCategoriesLoading ? <Skeleton paragraph={{ rows: 1 }} active /> : (
                 <Form.Item
-                  label="Категория приема"
+                  label={t('applicantAdmissionCategory.form.categoryLabel')}
                   name="admissionCategoryId"
-                  rules={[{ required: true, message: "Выберите категорию приема" }]}
+                  rules={[{ required: true, message: t('applicantAdmissionCategory.form.categoryRequired') }]}
                 >
-                  <Select placeholder="Выберите категорию приема">
+                  <Select placeholder={t('applicantAdmissionCategory.form.categoryPlaceholder')}>
                     {categories.map(c => (
                       <Select.Option value={c.id} key={c.id}>{c.name}</Select.Option>
                     ))}
@@ -369,9 +371,9 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
             )}
 
             <Form.Item
-              label="Приоритет выбора"
+              label={t('applicantAdmissionCategory.form.priorityLabel')}
               name="selectionPriority"
-              rules={[{ required: true, message: "Укажите приоритет" }]}
+              rules={[{ required: true, message: t('applicantAdmissionCategory.form.priorityRequired') }]}
             >
               <InputNumber className={styles.inputNumberFullWidth} min={1} />
             </Form.Item>
@@ -381,7 +383,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить заявку' : 'Добавить заявку'}
+                {props.elementId ? t('applicantAdmissionCategory.form.updateButton') : t('applicantAdmissionCategory.form.addButton')}
               </Button>
             )}
             {props.buttons}

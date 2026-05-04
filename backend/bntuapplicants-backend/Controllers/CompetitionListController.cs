@@ -5,24 +5,28 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [ApiController]
     [Route("/api/v1/competition_lists")]
     public class CompetitionListController : ControllerBase
     {
         private readonly ICompetitionListRepository _repository;
         private readonly ISpecialtyRepository _specialtyRepository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public CompetitionListController(
             ICompetitionListRepository repository,
-            ISpecialtyRepository specialtyRepository)
+            ISpecialtyRepository specialtyRepository,
+            IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _specialtyRepository = specialtyRepository;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -73,10 +77,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var specialty = await _specialtyRepository.GetByIdAsync(dto.SpecialtyId);
             if (specialty == null)
-                return NotFound($"Специальность с id {dto.SpecialtyId} не найдена");
+                return NotFound(new { message = (string)_localizer["Specialty.NotFound", dto.SpecialtyId] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.SpecialtyId))
-                return Conflict("Конкурсный список с таким названием уже существует в данной специальности");
+                return Conflict(new { message = (string)_localizer["CompetitionList.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new CompetitionList
             {
@@ -86,7 +90,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать конкурсный список");
+                return StatusCode(500, new { message = (string)_localizer["CompetitionList.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -104,14 +108,14 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Конкурсный список с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["CompetitionList.NotFound", id] });
 
             var specialty = await _specialtyRepository.GetByIdAsync(dto.SpecialtyId);
             if (specialty == null)
-                return NotFound($"Специальность с id {dto.SpecialtyId} не найдена");
+                return NotFound(new { message = (string)_localizer["Specialty.NotFound", dto.SpecialtyId] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.SpecialtyId, id))
-                return Conflict("Конкурсный список с таким названием уже существует в данной специальности");
+                return Conflict(new { message = (string)_localizer["CompetitionList.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new CompetitionList
             {
@@ -122,7 +126,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении конкурсного списка");
+                return StatusCode(500, new { message = (string)_localizer["CompetitionList.UpdateError"] });
 
             return NoContent();
         }
@@ -135,11 +139,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Конкурсный список с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["CompetitionList.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении конкурсного списка");
+                return StatusCode(500, new { message = (string)_localizer["CompetitionList.DeleteError"] });
 
             return NoContent();
         }

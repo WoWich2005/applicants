@@ -2,8 +2,10 @@ import { Button, Form, Input, InputNumber, Space, message } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { competitionListsApi } from "../../api/competitionListsApi"
+import { useTranslation } from "react-i18next"
 
 function CompetitionListSimpleForm(/** @type {any} */ props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -37,7 +39,7 @@ function CompetitionListSimpleForm(/** @type {any} */ props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка сохранения конкурсного списка на сервере"
+          : t('competitionList.form.saveError')
       )
       console.log(err)
     } finally {
@@ -60,17 +62,17 @@ function CompetitionListSimpleForm(/** @type {any} */ props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Название конкурсного списка"
+              label={t('competitionList.form.nameLabel')}
               name="name"
-              rules={[{ required: true, message: "Название обязательно для заполнения" }]}
+              rules={[{ required: true, message: t('competitionList.form.nameRequired') }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              label="План набора"
+              label={t('competitionList.form.planLabel')}
               name="plan"
-              rules={[{ required: true, message: "План набора обязателен" }]}
+              rules={[{ required: true, message: t('competitionList.form.planRequired') }]}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
@@ -80,7 +82,7 @@ function CompetitionListSimpleForm(/** @type {any} */ props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить список' : 'Добавить список'}
+                {props.elementId ? t('competitionList.form.updateButton') : t('competitionList.form.addButton')}
               </Button>
             )}
             {props.buttons}

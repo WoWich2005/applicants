@@ -1,3 +1,4 @@
+using bntuapplicants_backend;
 using bntuapplicants_backend.Constants;
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Data.Repositories;
@@ -50,7 +51,33 @@ builder.Services.AddAuthorization(options =>
         .Build();
 });
 
+builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+
+var supportedCultures = new[] { "ru", "en" };
+builder.Services.Configure<Microsoft.AspNetCore.Builder.RequestLocalizationOptions>(options =>
+{
+    options.SetDefaultCulture("ru")
+           .AddSupportedCultures(supportedCultures)
+           .AddSupportedUICultures(supportedCultures);
+});
+
 builder.Services.AddControllers()
+    .AddDataAnnotationsLocalization(options =>
+    {
+        options.DataAnnotationLocalizerProvider = (type, factory) =>
+            factory.Create(typeof(SharedResources));
+    })
+    .ConfigureApiBehaviorOptions(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var firstError = context.ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault() ?? "Validation error";
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult(new { message = firstError });
+        };
+    })
     .AddJsonOptions(options =>
     {
         options.JsonSerializerOptions.Converters.Add(
@@ -128,6 +155,7 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseCors();
+app.UseRequestLocalization();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

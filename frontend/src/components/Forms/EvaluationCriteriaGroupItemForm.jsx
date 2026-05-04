@@ -3,8 +3,10 @@ import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { evaluationCriteriaApi } from "../../api/evaluationCriteriaApi"
 import { evaluationCriteriaGroupItemsApi } from "../../api/evaluationCriteriaGroupItemsApi"
+import { useTranslation } from "react-i18next"
 
 function EvaluationCriteriaGroupItemForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -21,7 +23,7 @@ function EvaluationCriteriaGroupItemForm(props) {
         setCriteria(response.data)
         setIsInputDataLoading(false)
       } catch {
-        messageApi.error("Не удалось получить данные с сервера")
+        messageApi.error(t('evaluationCriteriaGroupItem.form.fetchError'))
       }
     }
 
@@ -59,7 +61,7 @@ function EvaluationCriteriaGroupItemForm(props) {
 
       form.resetFields()
     } catch (err) {
-      messageApi.error("Ошибка сохранения оценочного параметра в группе")
+      messageApi.error(t('evaluationCriteriaGroupItem.form.saveError'))
       console.log(err)
     } finally {
       setIsLoading(false)
@@ -85,9 +87,9 @@ function EvaluationCriteriaGroupItemForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Оценочный параметр"
+              label={t('evaluationCriteriaGroupItem.form.criteriaLabel')}
               name="criteriaId"
-              rules={[{ required: true, message: "Выберите оценочный параметр" }]}
+              rules={[{ required: true, message: t('evaluationCriteriaGroupItem.form.criteriaRequired') }]}
             >
               <Select>
                 {criteria.map(c => (
@@ -99,9 +101,9 @@ function EvaluationCriteriaGroupItemForm(props) {
             </Form.Item>
 
             <Form.Item
-              label="Приоритет"
+              label={t('evaluationCriteriaGroupItem.form.priorityLabel')}
               name="priority"
-              rules={[{ required: true, message: "Укажите приоритет" }]}
+              rules={[{ required: true, message: t('evaluationCriteriaGroupItem.form.priorityRequired') }]}
             >
               <InputNumber
                 className={styles.inputNumberFullWidth}
@@ -114,7 +116,7 @@ function EvaluationCriteriaGroupItemForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить параметр' : 'Добавить параметр'}
+                {props.elementId ? t('evaluationCriteriaGroupItem.form.updateButton') : t('evaluationCriteriaGroupItem.form.addButton')}
               </Button>
             )}
             {props.buttons}

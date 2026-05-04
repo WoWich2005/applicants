@@ -4,8 +4,10 @@ import DeleteModal from "../Modals/DeleteModal"
 import AddButton from "../Buttons/AddButton"
 import DataTable from "../DataTable"
 import { Link } from "react-router"
+import { useTranslation } from "react-i18next"
 
 function CrudTable(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
 
   const [isDataLoading, setIsDataLoading] = useState(true)
@@ -39,7 +41,7 @@ function CrudTable(props) {
         const [_, response] = await Promise.all([delayPromise, props.getAllAsync()])
         setDataSource(response.data)
       } catch (err) {
-        messageApi.error("Ошибка получения данных")
+        messageApi.error(t('common.error.fetchData'))
         console.log(err)
       } finally {
         setIsDataLoading(false)
@@ -63,7 +65,7 @@ function CrudTable(props) {
         setDataSource(response.data.items)
         setTotal(response.data.total)
       } catch (err) {
-        messageApi.error("Ошибка получения данных")
+        messageApi.error(t('common.error.fetchData'))
         console.log(err)
       } finally {
         setIsDataLoading(false)
@@ -123,7 +125,7 @@ function CrudTable(props) {
       }
     } catch (err) {
       const serverMessage = /** @type {any} */ (err)?.response?.data?.message
-      messageApi.error(serverMessage ?? "Ошибка удаления элемента на сервере")
+      messageApi.error(serverMessage ?? t('common.error.deleteServer'))
       console.log(err)
     } finally {
       setIsDeleteLoading(false)
@@ -152,7 +154,7 @@ function CrudTable(props) {
           return
         }
       } catch {
-        messageApi.error("Ошибка при проверке связанных данных")
+        messageApi.error(t('common.error.checkRelations'))
         return
       } finally {
         setIsBlockersLoading(false)
@@ -164,7 +166,7 @@ function CrudTable(props) {
 
   const actionColumn = props.readOnly
     ? [{
-      title: "Действия",
+      title: t('common.actions'),
       dataIndex: "controls",
       key: "control",
       width: 120,
@@ -172,19 +174,19 @@ function CrudTable(props) {
         if (props.editType === "page" && props.renderEditUrl) {
           return (
             <Link to={props.renderEditUrl(el)}>
-              <Button type="link">Просмотр</Button>
+              <Button type="link">{t('common.view')}</Button>
             </Link>
           )
         }
         return (
           <Button type="link" onClick={() => openEditModal(el)}>
-            Просмотр
+            {t('common.view')}
           </Button>
         )
       }
     }]
     : [{
-      title: "Действия",
+      title: t('common.actions'),
       dataIndex: "controls",
       key: "control",
       width: 250,
@@ -198,14 +200,14 @@ function CrudTable(props) {
                 type="link"
                 onClick={() => openEditModal(el)}
               >
-                Редактировать
+                {t('common.edit')}
               </Button>
             )}
 
             {(props.editType === "page") && (
               <Link to={props.renderEditUrl(el)}>
                 <Button type="link">
-                  Редактировать
+                  {t('common.edit')}
                 </Button>
               </Link>
             )}
@@ -215,7 +217,7 @@ function CrudTable(props) {
               onClick={() => openDeleteModal(el)}
               loading={isBlockersLoading && curDeleteEl?.id === el.id}
             >
-              Удалить
+              {t('common.delete')}
             </Button>
           </Space>
         )
@@ -239,7 +241,7 @@ function CrudTable(props) {
       setPageSize(newPageSize)
     },
     showSizeChanger: true,
-    showTotal: (t) => `Всего: ${t}`,
+    showTotal: (total) => t('common.total', { total }),
   } : undefined
 
   return (
@@ -259,7 +261,9 @@ function CrudTable(props) {
           readOnly={props.readOnly}
           buttons={(
             <>
-              <Button onClick={() => setIsEditElModalOpen(false)}>{props.readOnly ? 'Закрыть' : 'Отмена'}</Button>
+              <Button onClick={() => setIsEditElModalOpen(false)}>
+                {props.readOnly ? t('common.close') : t('common.cancel')}
+              </Button>
             </>
           )}
           {...props.elementFormProps}
@@ -276,15 +280,15 @@ function CrudTable(props) {
 
       <Modal
         open={isDeleteBlockedModalOpen}
-        title="Невозможно удалить"
-        footer={<Button onClick={() => setIsDeleteBlockedModalOpen(false)}>Закрыть</Button>}
+        title={t('common.cannotDelete')}
+        footer={<Button onClick={() => setIsDeleteBlockedModalOpen(false)}>{t('common.close')}</Button>}
         onCancel={() => setIsDeleteBlockedModalOpen(false)}
       >
         {props.renderDeleteBlockersContent && deleteBlockers
           ? props.renderDeleteBlockersContent(curDeleteEl, deleteBlockers)
           : (
             <Typography.Paragraph>
-              Удаление невозможно: существуют связанные записи.
+              {t('common.noRelatedRecords')}
             </Typography.Paragraph>
           )
         }
@@ -298,7 +302,7 @@ function CrudTable(props) {
               handleRequestResult={onCreateSuccess}
               buttons={(
                 <>
-                  <Button onClick={() => setIsCreateElModalOpen(false)}>Отмена</Button>
+                  <Button onClick={() => setIsCreateElModalOpen(false)}>{t('common.cancel')}</Button>
                 </>
               )}
               {...props.elementFormProps}

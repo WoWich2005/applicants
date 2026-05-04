@@ -3,8 +3,10 @@ import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { applicantEvaluationValuesApi } from "../../api/applicantEvaluationValuesApi"
 import { evaluationCriteriaApi } from "../../api/evaluationCriteriaApi"
+import { useTranslation } from "react-i18next"
 
 function ApplicantEvaluationValueForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -20,7 +22,7 @@ function ApplicantEvaluationValueForm(props) {
         setCriteria(response.data)
         setIsCriteriaLoading(false)
       } catch {
-        messageApi.error("Не удалось получить список оценочных параметров")
+        messageApi.error(t('applicantEvaluationValue.form.fetchCriteriaError'))
       }
     }
 
@@ -59,7 +61,7 @@ function ApplicantEvaluationValueForm(props) {
       if ('response' in err && err.response.status === 400) {
         messageApi.error(err.response.data)
       } else {
-        messageApi.error("Ошибка сохранения данных на сервере")
+        messageApi.error(t('applicantEvaluationValue.form.saveError'))
       }
     } finally {
       setIsLoading(false)
@@ -85,9 +87,9 @@ function ApplicantEvaluationValueForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Оценочный параметр"
+              label={t('applicantEvaluationValue.form.criteriaLabel')}
               name="evaluationCriteriaId"
-              rules={[{ required: true, message: "Выберите оценочный параметр" }]}
+              rules={[{ required: true, message: t('applicantEvaluationValue.form.criteriaRequired') }]}
             >
               <Select
                 showSearch
@@ -107,16 +109,16 @@ function ApplicantEvaluationValueForm(props) {
             </Form.Item>
 
             <Form.Item
-              label="Значение параметра"
+              label={t('applicantEvaluationValue.form.valueLabel')}
               name="value"
-              extra={selectedCriteria ? `Допустимый диапазон: ${selectedCriteria.minValue} – ${selectedCriteria.maxValue}` : null}
+              extra={selectedCriteria ? t('applicantEvaluationValue.form.valueRange', { min: selectedCriteria.minValue, max: selectedCriteria.maxValue }) : null}
               rules={[
-                { required: true, message: "Укажите значение" },
+                { required: true, message: t('applicantEvaluationValue.form.valueRequired') },
                 {
                   validator(_, value) {
                     if (value == null || !selectedCriteria) return Promise.resolve()
                     if (value < selectedCriteria.minValue || value > selectedCriteria.maxValue)
-                      return Promise.reject(new Error(`Значение должно быть от ${selectedCriteria.minValue} до ${selectedCriteria.maxValue}`))
+                      return Promise.reject(new Error(t('applicantEvaluationValue.form.valueRangeError', { min: selectedCriteria.minValue, max: selectedCriteria.maxValue })))
                     return Promise.resolve()
                   }
                 }
@@ -134,7 +136,7 @@ function ApplicantEvaluationValueForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить значение' : 'Добавить параметр'}
+                {props.elementId ? t('applicantEvaluationValue.form.updateButton') : t('applicantEvaluationValue.form.addButton')}
               </Button>
             )}
             {props.buttons}

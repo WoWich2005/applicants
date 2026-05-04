@@ -18,9 +18,11 @@ import { competitionListsApi } from "../api/competitionListsApi"
 import { specialtiesApi } from "../api/specialtiesApi"
 import { departmentsApi } from "../api/departmentsApi"
 import { facultiesApi } from "../api/facultyApi"
+import { useTranslation } from "react-i18next"
 
 function ApplicantEdit() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
   const [messageApi, contextHolder] = useMessage()
 
@@ -59,7 +61,7 @@ function ApplicantEdit() {
         setDepartmentsDict(toDict(departmentsResponse.data))
         setFacultiesDict(toDict(facultiesResponse.data))
       } catch {
-        messageApi.error("Ошибка получения данных с сервера")
+        messageApi.error(t('applicant.edit.fetchError'))
       }
     }
 
@@ -97,7 +99,7 @@ function ApplicantEdit() {
       <Result
         status="404"
         title="404"
-        subTitle="Такого абитуриента не существует"
+        subTitle={t('applicant.edit.notFound')}
       />
     )
   } else if (responseStatus == 500) {
@@ -105,7 +107,7 @@ function ApplicantEdit() {
       <Result
         status="500"
         title="500"
-        subTitle="Ошибка сервера"
+        subTitle={t('applicant.edit.serverError')}
       />
     )
   }
@@ -118,7 +120,7 @@ function ApplicantEdit() {
   const tabs = [
     {
       key: "data",
-      label: "Данные абитуриента",
+      label: t('applicant.edit.tabData'),
       children: (
         <ApplicantForm
           initialValues={applicant}
@@ -130,7 +132,7 @@ function ApplicantEdit() {
     },
     {
       key: "applications",
-      label: "Заявки",
+      label: t('applicant.edit.tabApplications'),
       children: (
         <CrudTable
           elementForm={ApplicantAdmissionCategoryForm}
@@ -140,13 +142,13 @@ function ApplicantEdit() {
           getAllAsync={() => applicantAdmissionCategoriesApi.getAllByApplicant(applicantId)}
           deleteAsync={(id) => applicantAdmissionCategoriesApi.delete(id)}
 
-          addButtonTitle="Добавить заявку"
-          renderEditTitle={() => `Редактирование заявки`}
-          renderDeleteText={() => `Удалить заявку?`}
+          addButtonTitle={t('applicantAdmissionCategory.addButton')}
+          renderEditTitle={() => t('applicantAdmissionCategory.editTitle')}
+          renderDeleteText={() => t('applicantAdmissionCategory.deleteText')}
 
           columns={[
             {
-              title: "Приоритет",
+              title: t('applicantAdmissionCategory.colPriority'),
               dataIndex: "selectionPriority",
               key: "selectionPriority",
               width: "120px",
@@ -154,7 +156,7 @@ function ApplicantEdit() {
               sorter: (a, b) => a.selectionPriority - b.selectionPriority
             },
             {
-              title: "Факультет",
+              title: t('applicantAdmissionCategory.colFaculty'),
               key: "faculty",
               render: (_, el) => {
                 const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
@@ -173,7 +175,7 @@ function ApplicantEdit() {
               }
             },
             {
-              title: "Кафедра",
+              title: t('applicantAdmissionCategory.colDepartment'),
               key: "department",
               render: (_, el) => {
                 const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
@@ -190,7 +192,7 @@ function ApplicantEdit() {
               }
             },
             {
-              title: "Специальность",
+              title: t('applicantAdmissionCategory.colSpecialty'),
               key: "specialty",
               render: (_, el) => {
                 const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
@@ -205,7 +207,7 @@ function ApplicantEdit() {
               }
             },
             {
-              title: "Конкурсный список",
+              title: t('applicantAdmissionCategory.colCompetitionList'),
               key: "competitionList",
               render: (_, el) => {
                 const compListId = admissionCategoriesDict[el.admissionCategoryId]?.competitionListId
@@ -220,7 +222,7 @@ function ApplicantEdit() {
               }
             },
             {
-              title: "Категория приема",
+              title: t('applicantAdmissionCategory.colCategory'),
               dataIndex: "admissionCategoryId",
               key: "admissionCategoryId",
               sorter: (a, b) =>
@@ -235,7 +237,7 @@ function ApplicantEdit() {
     },
     {
       key: "evaluation",
-      label: "Оценочные параметры",
+      label: t('applicant.edit.tabEvaluation'),
       children: (
         <CrudTable
           elementForm={ApplicantEvaluationValueForm}
@@ -245,13 +247,13 @@ function ApplicantEdit() {
           getAllAsync={() => applicantEvaluationValuesApi.getAllByApplicant(applicantId)}
           deleteAsync={(id) => applicantEvaluationValuesApi.delete(id)}
 
-          addButtonTitle="Добавить оценочный параметр"
-          renderEditTitle={() => `Редактирование оценочного параметра`}
-          renderDeleteText={() => `Удалить оценочный параметр?`}
+          addButtonTitle={t('applicantEvaluationValue.addButton')}
+          renderEditTitle={() => t('applicantEvaluationValue.editTitle')}
+          renderDeleteText={() => t('applicantEvaluationValue.deleteText')}
 
           columns={[
             {
-              title: "Оценочный параметр",
+              title: t('applicantEvaluationValue.colCriteria'),
               dataIndex: "evaluationCriteriaId",
               key: "evaluationCriteriaId",
               sorter: (a, b) =>
@@ -261,7 +263,7 @@ function ApplicantEdit() {
               render: (_, el) => evaluationCriteriaDict[el.evaluationCriteriaId]?.name ?? el.evaluationCriteriaId
             },
             {
-              title: "Значение",
+              title: t('applicantEvaluationValue.colValue'),
               dataIndex: "value",
               key: "value",
               width: "150px",
@@ -279,11 +281,11 @@ function ApplicantEdit() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <Link to={ROUTES.APPLICANTS}>Абитуриенты</Link> },
+          { title: <Link to={ROUTES.APPLICANTS}>{t('applicant.edit.breadcrumb')}</Link> },
           { title: applicant.name },
         ]}
       />
-      <Title title={readOnly ? "Просмотр данных абитуриента" : "Редактирование данных абитуриента"} />
+      <Title title={readOnly ? t('applicant.edit.titleView') : t('applicant.edit.titleEdit')} />
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}

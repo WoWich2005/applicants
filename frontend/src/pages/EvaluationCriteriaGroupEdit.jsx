@@ -11,9 +11,11 @@ import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { evaluationCriteriaGroupItemsApi } from "../api/evaluationCriteriaGroupItemsApi"
 import { evaluationCriteriaApi } from "../api/evaluationCriteriaApi"
 import { useAuth } from "../contexts/AuthContext"
+import { useTranslation } from "react-i18next"
 
 function EvaluationCriteriaGroupEdit() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
   const [messageApi, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -33,7 +35,7 @@ function EvaluationCriteriaGroupEdit() {
           return acc
         }, {}))
       } catch {
-        messageApi.error("Ошибка получения данных с сервера")
+        messageApi.error(t('evaluationCriteriaGroup.edit.fetchError'))
       }
     }
 
@@ -71,7 +73,7 @@ function EvaluationCriteriaGroupEdit() {
       <Result
         status="404"
         title="404"
-        subTitle="Такой группы оценочных параметров не существует"
+        subTitle={t('evaluationCriteriaGroup.edit.notFound')}
       />
     )
   } else if (responseStatus === 500) {
@@ -79,7 +81,7 @@ function EvaluationCriteriaGroupEdit() {
       <Result
         status="500"
         title="500"
-        subTitle="Ошибка сервера"
+        subTitle={t('evaluationCriteriaGroup.edit.serverError')}
       />
     )
   }
@@ -92,7 +94,7 @@ function EvaluationCriteriaGroupEdit() {
   const tabs = [
     {
       key: "data",
-      label: "Данные группы",
+      label: t('evaluationCriteriaGroup.edit.tabData'),
       children: (
         <EvaluationCriteriaGroupForm
           initialValues={group}
@@ -104,7 +106,7 @@ function EvaluationCriteriaGroupEdit() {
     },
     {
       key: "criteria",
-      label: "Оценочные параметры",
+      label: t('evaluationCriteriaGroup.edit.tabCriteria'),
       children: (
         <CrudTable
           elementForm={EvaluationCriteriaGroupItemForm}
@@ -115,13 +117,13 @@ function EvaluationCriteriaGroupEdit() {
           getAllAsync={() => evaluationCriteriaGroupItemsApi.getAllByGroup(groupId)}
           deleteAsync={(id) => evaluationCriteriaGroupItemsApi.delete(id)}
 
-          addButtonTitle="Добавить оценочный параметр"
-          renderEditTitle={() => `Редактирование оценочного параметра в группе`}
-          renderDeleteText={() => `Удалить оценочный параметр из группы?`}
+          addButtonTitle={t('evaluationCriteriaGroupItem.addButton')}
+          renderEditTitle={() => t('evaluationCriteriaGroupItem.editTitle')}
+          renderDeleteText={() => t('evaluationCriteriaGroupItem.deleteText')}
 
           columns={[
             {
-              title: "Приоритет",
+              title: t('evaluationCriteriaGroupItem.colPriority'),
               dataIndex: "priority",
               key: "priority",
               width: 120,
@@ -129,7 +131,7 @@ function EvaluationCriteriaGroupEdit() {
               sorter: (a, b) => a.priority - b.priority
             },
             {
-              title: "Оценочный параметр",
+              title: t('evaluationCriteriaGroupItem.colCriteria'),
               dataIndex: "criteriaId",
               key: "criteriaId",
               render: (_, el) => criteriaDict[el.criteriaId]?.name ?? el.criteriaId,
@@ -150,11 +152,11 @@ function EvaluationCriteriaGroupEdit() {
       <Breadcrumb
         style={{ marginBottom: 16 }}
         items={[
-          { title: <Link to={ROUTES.EVALUATION_CRITERIA_GROUPS}>Группы оценочных параметров</Link> },
+          { title: <Link to={ROUTES.EVALUATION_CRITERIA_GROUPS}>{t('evaluationCriteriaGroup.edit.breadcrumb')}</Link> },
           { title: group.name },
         ]}
       />
-      <Title title={readOnly ? "Просмотр группы оценочных параметров" : "Редактирование группы оценочных параметров"} />
+      <Title title={readOnly ? t('evaluationCriteriaGroup.edit.titleView') : t('evaluationCriteriaGroup.edit.titleEdit')} />
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}

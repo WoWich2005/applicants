@@ -3,25 +3,25 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class AdmissionCategoryRequestDto
     {
-        [Required(ErrorMessage = "Название категории приема обязательно")]
-        [StringLength(255, ErrorMessage = "Название не должно превышать 255 символов")]
+        [Required(ErrorMessage = "AdmissionCategory.Name.Required")]
+        [StringLength(255, ErrorMessage = "AdmissionCategory.Name.MaxLength255")]
         public string Name { get; set; }
 
-        [Required(ErrorMessage = "Id конкурсного списка обязателен")]
+        [Required(ErrorMessage = "AdmissionCategory.CompetitionListId.Required")]
         public int CompetitionListId { get; set; }
 
-        [Required(ErrorMessage = "Id группы оценочных параметров обязателен")]
+        [Required(ErrorMessage = "AdmissionCategory.EvaluationCriteriaGroupId.Required")]
         public int EvaluationCriteriaGroupId { get; set; }
 
-        [Required(ErrorMessage = "Квота обязательна")]
-        [Range(1, int.MaxValue, ErrorMessage = "Квота должна быть натуральным числом")]
+        [Required(ErrorMessage = "AdmissionCategory.Quota.Required")]
+        [Range(1, int.MaxValue, ErrorMessage = "AdmissionCategory.Quota.Range")]
         public int Quota { get; set; }
 
-        [Required(ErrorMessage = "Приоритет обязателен")]
-        [Range(1, int.MaxValue, ErrorMessage = "Приоритет должен быть натуральным числом")]
+        [Required(ErrorMessage = "AdmissionCategory.Priority.Required")]
+        [Range(1, int.MaxValue, ErrorMessage = "AdmissionCategory.Priority.Range")]
         public int Priority { get; set; }
     }
 }

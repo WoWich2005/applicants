@@ -1,11 +1,12 @@
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [Route("/get_results")]
     [ApiController]
     public class ResultController : ControllerBase
@@ -13,15 +14,18 @@ namespace bntuapplicants_backend.Controllers
         private readonly IResultRepository _resultRepository;
         private readonly ISpecialtyRepository _specialtyRepository;
         private readonly IFacultyRepository _facultyRepository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public ResultController(
             IResultRepository resultRepository,
             ISpecialtyRepository specialtyRepository,
-            IFacultyRepository facultyRepository)
+            IFacultyRepository facultyRepository,
+            IStringLocalizer<SharedResources> localizer)
         {
             _resultRepository = resultRepository;
             _specialtyRepository = specialtyRepository;
             _facultyRepository = facultyRepository;
+            _localizer = localizer;
         }
 
         [HttpGet("{facultyId}")]
@@ -29,11 +33,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var faculty = await _facultyRepository.GetByIdAsync(facultyId);
             if (faculty == null)
-                return NotFound($"Факультет с ID {facultyId} не найден");
+                return NotFound(new { message = (string)_localizer["Result.FacultyNotFound", facultyId] });
 
             var facultySpecialties = await _specialtyRepository.GetByFacultyIdAsync(facultyId);
             if (!facultySpecialties.Any())
-                return NotFound("Для указанного факультета не найдено специальностей");
+                return NotFound(new { message = (string)_localizer["Result.NoSpecialties"] });
 
             var specialtyIdToApplicants = await _resultRepository.GetByFacultyIdAsync(facultyId);
 

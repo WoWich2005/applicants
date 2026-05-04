@@ -5,6 +5,15 @@
 
 	position: relative;
 
+	.langSwitcher {
+		position: absolute;
+
+		top: 50%;
+		right: 68px;
+
+		transform: translateY(-50%);
+	}
+
 	.avatar {
 		position: absolute;
 

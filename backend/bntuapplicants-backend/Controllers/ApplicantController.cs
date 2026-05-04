@@ -6,6 +6,7 @@ using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using Npgsql;
 using System.Diagnostics.CodeAnalysis;
 
@@ -16,13 +17,13 @@ namespace bntuapplicants_backend.Controllers
     public class ApplicantController : ControllerBase
     {
         private readonly IApplicantRepository _repository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-
-        public ApplicantController(IApplicantRepository repository)
+        public ApplicantController(IApplicantRepository repository, IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
+            _localizer = localizer;
         }
-
 
         [HttpGet]
         public async Task<ActionResult<List<Applicant>>> GetAllRecords()
@@ -45,7 +46,6 @@ namespace bntuapplicants_backend.Controllers
             return Ok(await _repository.GetPagedAsync(page, pageSize, search, externalIdSearch, sortField, sortOrder));
         }
 
-
         [HttpGet("{id}")]
         public async Task<ActionResult<Applicant>> GetByID(int id)
         {
@@ -58,7 +58,6 @@ namespace bntuapplicants_backend.Controllers
 
             return record;
         }
-
 
         [HttpPost]
         [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
@@ -76,7 +75,7 @@ namespace bntuapplicants_backend.Controllers
                 });
 
                 if (createdRecord == null)
-                    return StatusCode(500, "Ошибка. Не удалось создать абитуриента");
+                    return StatusCode(500, new { message = (string)_localizer["Applicant.CreateError"] });
 
                 return CreatedAtAction(
                     nameof(this.GetByID),
@@ -86,7 +85,7 @@ namespace bntuapplicants_backend.Controllers
             }
             catch (PostgresException ex) when (ex.SqlState == "23505")
             {
-                return Conflict(new { message = "Абитуриент с таким ID уже существует" });
+                return Conflict(new { message = (string)_localizer["Applicant.ExternalIdExists"] });
             }
         }
 
@@ -98,15 +97,14 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Абитуриент с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["Applicant.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении абитуриента");
+                return StatusCode(500, new { message = (string)_localizer["Applicant.DeleteError"] });
 
             return NoContent();
         }
-
 
         [HttpPut("{id}")]
         [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
@@ -117,7 +115,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Абитуриент с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["Applicant.NotFound", id] });
 
             try
             {
@@ -129,13 +127,13 @@ namespace bntuapplicants_backend.Controllers
                     ExternalId = dto.ExternalId
                 });
                 if (!success)
-                    return StatusCode(500, "Ошибка при обновлении данных абитуриента");
+                    return StatusCode(500, new { message = (string)_localizer["Applicant.UpdateError"] });
 
                 return NoContent();
             }
             catch (PostgresException ex) when (ex.SqlState == "23505")
             {
-                return Conflict(new { message = "Абитуриент с таким ID уже существует" });
+                return Conflict(new { message = (string)_localizer["Applicant.ExternalIdExists"] });
             }
         }
     }

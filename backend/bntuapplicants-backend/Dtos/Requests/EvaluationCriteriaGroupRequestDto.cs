@@ -3,11 +3,11 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class EvaluationCriteriaGroupRequestDto
     {
-        [Required(ErrorMessage = "Название группы оценочных параметров обязательно")]
-        [StringLength(255, ErrorMessage = "Название не должно превышать 255 символов")]
+        [Required(ErrorMessage = "EvaluationCriteriaGroup.Name.Required")]
+        [StringLength(255, ErrorMessage = "EvaluationCriteriaGroup.Name.MaxLength255")]
         public string Name { get; set; }
     }
 }

@@ -5,6 +5,7 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
@@ -15,11 +16,13 @@ namespace bntuapplicants_backend.Controllers
     {
         private readonly IDepartmentRepository _repository;
         private readonly IFacultyRepository _facultyRepository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public DepartmentController(IDepartmentRepository repository, IFacultyRepository facultyRepository)
+        public DepartmentController(IDepartmentRepository repository, IFacultyRepository facultyRepository, IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _facultyRepository = facultyRepository;
+            _localizer = localizer;
         }
 
         private int? GetFacultyManagerFacultyId()
@@ -100,10 +103,10 @@ namespace bntuapplicants_backend.Controllers
 
             var faculty = await _facultyRepository.GetByIdAsync(dto.FacultyId);
             if (faculty == null)
-                return NotFound($"Факультет с id {dto.FacultyId} не найден");
+                return NotFound(new { message = (string)_localizer["Faculty.NotFound", dto.FacultyId] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.FacultyId))
-                return Conflict("Кафедра с таким названием уже существует в данном факультете");
+                return Conflict(new { message = (string)_localizer["Department.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new Department
             {
@@ -112,7 +115,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать кафедру");
+                return StatusCode(500, new { message = (string)_localizer["Department.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -131,7 +134,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Кафедра с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Department.NotFound", id] });
 
             var facultyId = GetFacultyManagerFacultyId();
             if (facultyId.HasValue && (existing.FacultyId != facultyId.Value || dto.FacultyId != facultyId.Value))
@@ -139,10 +142,10 @@ namespace bntuapplicants_backend.Controllers
 
             var faculty = await _facultyRepository.GetByIdAsync(dto.FacultyId);
             if (faculty == null)
-                return NotFound($"Факультет с id {dto.FacultyId} не найден");
+                return NotFound(new { message = (string)_localizer["Faculty.NotFound", dto.FacultyId] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.FacultyId, id))
-                return Conflict("Кафедра с таким названием уже существует в данном факультете");
+                return Conflict(new { message = (string)_localizer["Department.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new Department
             {
@@ -152,7 +155,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении кафедры");
+                return StatusCode(500, new { message = (string)_localizer["Department.UpdateError"] });
 
             return NoContent();
         }
@@ -166,7 +169,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Кафедра с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Department.NotFound", id] });
 
             var facultyId = GetFacultyManagerFacultyId();
             if (facultyId.HasValue && existing.FacultyId != facultyId.Value)
@@ -174,7 +177,7 @@ namespace bntuapplicants_backend.Controllers
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении кафедры");
+                return StatusCode(500, new { message = (string)_localizer["Department.DeleteError"] });
 
             return NoContent();
         }

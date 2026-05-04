@@ -5,6 +5,7 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
@@ -15,10 +16,12 @@ namespace bntuapplicants_backend.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _repo;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public UserController(IUserRepository repo)
+        public UserController(IUserRepository repo, IStringLocalizer<SharedResources> localizer)
         {
             _repo = repo;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -49,7 +52,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repo.GetByUsernameAsync(dto.Username);
             if (existing != null)
-                return BadRequest(new { message = "Пользователь с таким именем уже существует" });
+                return BadRequest(new { message = (string)_localizer["User.UsernameExists"] });
 
             var user = new User
             {
@@ -74,7 +77,7 @@ namespace bntuapplicants_backend.Controllers
 
             var conflicting = await _repo.GetByUsernameAsync(dto.Username);
             if (conflicting != null && conflicting.Id != id)
-                return BadRequest(new { message = "Пользователь с таким именем уже существует" });
+                return BadRequest(new { message = (string)_localizer["User.UsernameExists"] });
 
             var user = new User
             {
@@ -108,13 +111,13 @@ namespace bntuapplicants_backend.Controllers
 
             var currentUserId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
             if (id == currentUserId)
-                return BadRequest(new { message = "Нельзя удалить собственный аккаунт" });
+                return BadRequest(new { message = (string)_localizer["User.CannotDeleteSelf"] });
 
             if (existing.Role == UserRoles.SuperAdmin)
             {
                 var count = await _repo.CountByRoleAsync(UserRoles.SuperAdmin);
                 if (count <= 1)
-                    return BadRequest(new { message = "Нельзя удалить последнего суперадминистратора" });
+                    return BadRequest(new { message = (string)_localizer["User.CannotDeleteLastSuperAdmin"] });
             }
 
             await _repo.DeleteAsync(id);

@@ -3,17 +3,17 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class ApplicantAdmissionCategoryRequestDto
     {
-        [Required(ErrorMessage = "Id абитуриента обязателен")]
+        [Required(ErrorMessage = "ApplicantAdmissionCategory.ApplicantId.Required")]
         public int ApplicantId { get; set; }
 
-        [Required(ErrorMessage = "Id категории приема обязателен")]
+        [Required(ErrorMessage = "ApplicantAdmissionCategory.AdmissionCategoryId.Required")]
         public int AdmissionCategoryId { get; set; }
 
-        [Required(ErrorMessage = "Приоритет выбора обязателен")]
-        [Range(1, int.MaxValue, ErrorMessage = "Приоритет должен быть натуральным числом")]
+        [Required(ErrorMessage = "ApplicantAdmissionCategory.SelectionPriority.Required")]
+        [Range(1, int.MaxValue, ErrorMessage = "ApplicantAdmissionCategory.SelectionPriority.Range")]
         public int SelectionPriority { get; set; }
     }
 }

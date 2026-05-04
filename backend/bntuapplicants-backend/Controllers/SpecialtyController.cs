@@ -5,6 +5,7 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
@@ -15,11 +16,13 @@ namespace bntuapplicants_backend.Controllers
     {
         private readonly ISpecialtyRepository _repository;
         private readonly IDepartmentRepository _departmentRepository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public SpecialtyController(ISpecialtyRepository repository, IDepartmentRepository departmentRepository)
+        public SpecialtyController(ISpecialtyRepository repository, IDepartmentRepository departmentRepository, IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _departmentRepository = departmentRepository;
+            _localizer = localizer;
         }
 
         private int? GetFacultyManagerFacultyId()
@@ -125,7 +128,7 @@ namespace bntuapplicants_backend.Controllers
                 return Forbid();
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.DepartmentId))
-                return Conflict("Специальность с таким названием уже существует в данной кафедре");
+                return Conflict(new { message = (string)_localizer["Specialty.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new Specialty()
             {
@@ -134,7 +137,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать специальность");
+                return StatusCode(500, new { message = (string)_localizer["Specialty.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetByID),
@@ -152,7 +155,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Специальность с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Specialty.NotFound", id] });
 
             var facultyId = GetFacultyManagerFacultyId();
             if (facultyId.HasValue && !await DepartmentBelongsToFacultyAsync(existing.DepartmentId, facultyId.Value))
@@ -160,7 +163,7 @@ namespace bntuapplicants_backend.Controllers
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении специальности");
+                return StatusCode(500, new { message = (string)_localizer["Specialty.DeleteError"] });
 
             return NoContent();
         }
@@ -175,7 +178,7 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Специальность с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["Specialty.NotFound", id] });
 
             var facultyId = GetFacultyManagerFacultyId();
             if (facultyId.HasValue)
@@ -187,7 +190,7 @@ namespace bntuapplicants_backend.Controllers
             }
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.DepartmentId, id))
-                return Conflict("Специальность с таким названием уже существует в данной кафедре");
+                return Conflict(new { message = (string)_localizer["Specialty.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new Specialty
             {
@@ -196,7 +199,7 @@ namespace bntuapplicants_backend.Controllers
                 DepartmentId = dto.DepartmentId
             });
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении данных специальности");
+                return StatusCode(500, new { message = (string)_localizer["Specialty.UpdateError"] });
 
             return NoContent();
         }

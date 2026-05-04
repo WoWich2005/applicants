@@ -3,24 +3,28 @@ using bntuapplicants_backend.Dtos.Requests;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [ApiController]
     [Route("/api/v1/admission_categories")]
     public class AdmissionCategoryController : ControllerBase
     {
         private readonly IAdmissionCategoryRepository _repository;
         private readonly ICompetitionListRepository _competitionListRepository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
         public AdmissionCategoryController(
             IAdmissionCategoryRepository repository,
-            ICompetitionListRepository competitionListRepository)
+            ICompetitionListRepository competitionListRepository,
+            IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _competitionListRepository = competitionListRepository;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -73,10 +77,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var list = await _competitionListRepository.GetByIdAsync(dto.CompetitionListId);
             if (list == null)
-                return NotFound($"Конкурсный список с id {dto.CompetitionListId} не найден");
+                return NotFound(new { message = (string)_localizer["CompetitionList.NotFound", dto.CompetitionListId] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.CompetitionListId))
-                return Conflict("Категория приема с таким названием уже существует в данном конкурсном списке");
+                return Conflict(new { message = (string)_localizer["AdmissionCategory.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new AdmissionCategory
             {
@@ -88,7 +92,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать категорию приема");
+                return StatusCode(500, new { message = (string)_localizer["AdmissionCategory.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -105,10 +109,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Категория приема с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["AdmissionCategory.NotFound", id] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.CompetitionListId, id))
-                return Conflict("Категория приема с таким названием уже существует в данном конкурсном списке");
+                return Conflict(new { message = (string)_localizer["AdmissionCategory.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new AdmissionCategory
             {
@@ -121,7 +125,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении категории приема");
+                return StatusCode(500, new { message = (string)_localizer["AdmissionCategory.UpdateError"] });
 
             return NoContent();
         }
@@ -133,11 +137,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Категория приема с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["AdmissionCategory.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении категории приема");
+                return StatusCode(500, new { message = (string)_localizer["AdmissionCategory.DeleteError"] });
 
             return NoContent();
         }

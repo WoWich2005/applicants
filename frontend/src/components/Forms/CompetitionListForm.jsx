@@ -5,8 +5,10 @@ import { competitionListsApi } from "../../api/competitionListsApi"
 import { specialtiesApi } from "../../api/specialtiesApi"
 import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
+import { useTranslation } from "react-i18next"
 
 function CompetitionListForm(/** @type {any} */ props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -31,7 +33,7 @@ function CompetitionListForm(/** @type {any} */ props) {
         setFaculties(response.data)
         setIsFacultiesLoading(false)
       } catch {
-        messageApi.error("Не удалось получить список факультетов")
+        messageApi.error(t('competitionList.form.fetchFacultiesError'))
       }
     }
 
@@ -57,7 +59,7 @@ function CompetitionListForm(/** @type {any} */ props) {
         setSpecialties(specResponse.data)
         form.setFieldsValue(props.initialValues)
       } catch {
-        messageApi.error("Не удалось восстановить данные формы")
+        messageApi.error(t('competitionList.form.restoreError'))
       }
     }
 
@@ -84,7 +86,7 @@ function CompetitionListForm(/** @type {any} */ props) {
       const [_, response] = await Promise.all([delayPromise, departmentsApi.getByFacultyId(facultyId)])
       setDepartments(response.data)
     } catch {
-      messageApi.error("Не удалось получить список кафедр")
+      messageApi.error(t('competitionList.form.fetchDepartmentsError'))
     } finally {
       setIsDepartmentsLoading(false)
     }
@@ -101,7 +103,7 @@ function CompetitionListForm(/** @type {any} */ props) {
       const [_, response] = await Promise.all([delayPromise, specialtiesApi.getByDepartmentId(departmentId)])
       setSpecialties(response.data)
     } catch {
-      messageApi.error("Не удалось получить список специальностей")
+      messageApi.error(t('competitionList.form.fetchSpecialtiesError'))
     } finally {
       setIsSpecialtiesLoading(false)
     }
@@ -131,7 +133,7 @@ function CompetitionListForm(/** @type {any} */ props) {
       setDepartments([])
       setSpecialties([])
     } catch {
-      messageApi.error("Ошибка сохранения конкурсного списка на сервере")
+      messageApi.error(t('competitionList.form.saveError'))
     } finally {
       setIsLoading(false)
     }
@@ -156,26 +158,26 @@ function CompetitionListForm(/** @type {any} */ props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Название конкурсного списка"
+              label={t('competitionList.form.nameLabel')}
               name="name"
-              rules={[{ required: true, message: "Название обязательно для заполнения" }]}
+              rules={[{ required: true, message: t('competitionList.form.nameRequired') }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              label="План набора"
+              label={t('competitionList.form.planLabel')}
               name="plan"
-              rules={[{ required: true, message: "План набора обязателен" }]}
+              rules={[{ required: true, message: t('competitionList.form.planRequired') }]}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
 
-            <Form.Item label="Факультет">
+            <Form.Item label={t('competitionList.form.facultyLabel')}>
               <Select
                 value={selectedFacultyId}
                 onChange={handleFacultyChange}
-                placeholder="Выберите факультет"
+                placeholder={t('competitionList.form.facultyPlaceholder')}
               >
                 {faculties.map(faculty => (
                   <Select.Option value={faculty.id} key={faculty.id}>
@@ -189,11 +191,11 @@ function CompetitionListForm(/** @type {any} */ props) {
               isDepartmentsLoading ? (
                 <Skeleton paragraph={{ rows: 1 }} active />
               ) : (
-                <Form.Item label="Кафедра">
+                <Form.Item label={t('competitionList.form.departmentLabel')}>
                   <Select
                     value={selectedDepartmentId}
                     onChange={handleDepartmentChange}
-                    placeholder="Выберите кафедру"
+                    placeholder={t('competitionList.form.departmentPlaceholder')}
                   >
                     {departments.map(department => (
                       <Select.Option value={department.id} key={department.id}>
@@ -210,11 +212,11 @@ function CompetitionListForm(/** @type {any} */ props) {
                 <Skeleton paragraph={{ rows: 1 }} active />
               ) : (
                 <Form.Item
-                  label="Специальность"
+                  label={t('competitionList.form.specialtyLabel')}
                   name="specialtyId"
-                  rules={[{ required: true, message: "Специальность обязательна" }]}
+                  rules={[{ required: true, message: t('competitionList.form.specialtyRequired') }]}
                 >
-                  <Select placeholder="Выберите специальность">
+                  <Select placeholder={t('competitionList.form.specialtyPlaceholder')}>
                     {specialties.map(s => (
                       <Select.Option value={s.id} key={s.id}>
                         {s.name}
@@ -230,7 +232,7 @@ function CompetitionListForm(/** @type {any} */ props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить список' : 'Добавить список'}
+                {props.elementId ? t('competitionList.form.updateButton') : t('competitionList.form.addButton')}
               </Button>
             )}
             {props.buttons}

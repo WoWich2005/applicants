@@ -2,8 +2,10 @@ import { Button, Form, Input, InputNumber, message, Select, Space } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { evaluationCriteriaApi } from "../../api/evaluationCriteriaApi"
+import { useTranslation } from "react-i18next"
 
 function EvaluationCriteriaForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -36,7 +38,7 @@ function EvaluationCriteriaForm(props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка сохранения оценочного параметра на сервере"
+          : t('evaluationCriteria.form.saveError')
       )
       console.log(err)
     } finally {
@@ -63,12 +65,12 @@ function EvaluationCriteriaForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Название оценочного параметра"
+              label={t('evaluationCriteria.form.nameLabel')}
               name="name"
               rules={[
                 {
                   required: true,
-                  message: "Название оценочного параметра обязательно для заполнения",
+                  message: t('evaluationCriteria.form.nameRequired'),
                 }
               ]}
             >
@@ -79,12 +81,12 @@ function EvaluationCriteriaForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Минимальное значение"
+              label={t('evaluationCriteria.form.minValueLabel')}
               name="minValue"
               rules={[
                 {
                   required: true,
-                  message: "Минимальное значение обязательно для заполнения",
+                  message: t('evaluationCriteria.form.minValueRequired'),
                 }
               ]}
             >
@@ -93,12 +95,12 @@ function EvaluationCriteriaForm(props) {
           </div>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Максимальное значение"
+              label={t('evaluationCriteria.form.maxValueLabel')}
               name="maxValue"
               rules={[
                 {
                   required: true,
-                  message: "Максимальное значение обязательно для заполнения",
+                  message: t('evaluationCriteria.form.maxValueRequired'),
                 }
               ]}
             >
@@ -109,13 +111,13 @@ function EvaluationCriteriaForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Тип"
+              label={t('evaluationCriteria.form.typeLabel')}
               name="type"
-              rules={[{ required: true, message: "Тип обязателен для заполнения" }]}
+              rules={[{ required: true, message: t('evaluationCriteria.form.typeRequired') }]}
             >
               <Select>
-                <Select.Option value="higher_is_better">Больше — лучше</Select.Option>
-                <Select.Option value="lower_is_better">Меньше — лучше</Select.Option>
+                <Select.Option value="higher_is_better">{t('evaluationCriteria.typeHigher')}</Select.Option>
+                <Select.Option value="lower_is_better">{t('evaluationCriteria.typeLower')}</Select.Option>
               </Select>
             </Form.Item>
           </div>
@@ -124,7 +126,7 @@ function EvaluationCriteriaForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить оценочный параметр' : 'Добавить оценочный параметр'}
+                {props.elementId ? t('evaluationCriteria.form.updateButton') : t('evaluationCriteria.form.addButton')}
               </Button>
             )}
             {props.buttons}

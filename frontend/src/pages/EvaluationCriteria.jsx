@@ -4,10 +4,13 @@ import CrudTable from '../components/CrudTable'
 import EvaluationCriteriaForm from '../components/Forms/EvaluationCriteriaForm'
 import { evaluationCriteriaApi } from '../api/evaluationCriteriaApi'
 import { useAuth } from '../contexts/AuthContext'
+import { useTranslation } from 'react-i18next'
 
 function EvaluationCriteria() {
   const { auth } = useAuth()
+  const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
+
   const getDeleteBlockers = async (/** @type {any} */ criteria) => {
     const response = await evaluationCriteriaApi.getDeleteCheck(criteria.id)
     const { usedInGroups, applicants, applicantTotalCount } = response.data
@@ -18,7 +21,7 @@ function EvaluationCriteria() {
   const renderDeleteBlockersContent = (/** @type {any} */ criteria, /** @type {any} */ blockers) => (
     <>
       <Typography.Paragraph>
-        Невозможно удалить оценочный параметр <strong>"{criteria?.name}"</strong>:
+        {t('evaluationCriteria.deleteBlocked', { name: criteria?.name })}
       </Typography.Paragraph>
       {blockers.usedInGroups.length > 0 && (() => {
         const visible = blockers.usedInGroups.slice(0, 5)
@@ -26,13 +29,13 @@ function EvaluationCriteria() {
         return (
           <>
             <Typography.Paragraph>
-              Используется в следующих группах оценочных параметров:
+              {t('evaluationCriteria.usedInGroups')}
             </Typography.Paragraph>
             <List
               size="small"
               dataSource={visible}
               renderItem={(group) => <List.Item>{group.name}</List.Item>}
-              footer={remaining > 0 ? <Typography.Text type="secondary">и ещё {remaining} групп</Typography.Text> : null}
+              footer={remaining > 0 ? <Typography.Text type="secondary">{t('evaluationCriteria.andMoreGroups', { count: remaining })}</Typography.Text> : null}
             />
           </>
         )
@@ -40,14 +43,14 @@ function EvaluationCriteria() {
       {blockers.applicantTotalCount > 0 && (
         <>
           <Typography.Paragraph style={{ marginTop: blockers.usedInGroups.length > 0 ? 12 : 0 }}>
-            Есть значения данного параметра у следующих абитуриентов:
+            {t('evaluationCriteria.usedByApplicants')}
           </Typography.Paragraph>
           <List
             size="small"
             dataSource={blockers.applicants}
             renderItem={(applicant) => <List.Item>{applicant.name}</List.Item>}
             footer={blockers.applicantTotalCount > 5
-              ? <Typography.Text type="secondary">и ещё {blockers.applicantTotalCount - 5} абитуриентов</Typography.Text>
+              ? <Typography.Text type="secondary">{t('evaluationCriteria.andMoreApplicants', { count: blockers.applicantTotalCount - 5 })}</Typography.Text>
               : null}
           />
         </>
@@ -58,8 +61,8 @@ function EvaluationCriteria() {
   return (
     <>
       <Title
-        title="Оценочные параметры"
-        helpText={<>Здесь Вы можете создать новые оценочные параметры</>}
+        title={t('evaluationCriteria.title')}
+        helpText={t('evaluationCriteria.helpText')}
       />
 
       <CrudTable
@@ -73,42 +76,42 @@ function EvaluationCriteria() {
         getDeleteBlockers={getDeleteBlockers}
         renderDeleteBlockersContent={renderDeleteBlockersContent}
 
-        addButtonTitle="Новый оценочный параметр"
-        renderEditTitle={(/** @type {any} */ el) => `Редактирование оценочного параметра "${el?.name}"`}
-        renderDeleteText={(/** @type {any} */ el) => `Удалить оценочный параметр "${el?.name}"?`}
+        addButtonTitle={t('evaluationCriteria.addButton')}
+        renderEditTitle={(/** @type {any} */ el) => t('evaluationCriteria.editTitle', { name: el?.name })}
+        renderDeleteText={(/** @type {any} */ el) => t('evaluationCriteria.deleteText', { name: el?.name })}
 
         columns={[
           {
-            title: "Название",
+            title: t('evaluationCriteria.colName'),
             dataIndex: "name",
             key: "name",
             withSearch: true,
             sorter: true
           },
           {
-            title: "Минимальное значение",
+            title: t('evaluationCriteria.colMinValue'),
             dataIndex: "minValue",
             key: "minValue",
             sorter: true
           },
           {
-            title: "Максимальное значение",
+            title: t('evaluationCriteria.colMaxValue'),
             dataIndex: "maxValue",
             key: "maxValue",
             sorter: true
           },
           {
-            title: "Тип",
+            title: t('evaluationCriteria.colType'),
             dataIndex: "type",
             key: "type",
             filters: [
-              { text: "Больше — лучше", value: "higher_is_better" },
-              { text: "Меньше — лучше", value: "lower_is_better" }
+              { text: t('evaluationCriteria.typeHigher'), value: "higher_is_better" },
+              { text: t('evaluationCriteria.typeLower'), value: "lower_is_better" }
             ],
             filterMultiple: false,
             render: (/** @type {string} */ type) => (
               <span style={{ whiteSpace: 'nowrap' }}>
-                {type === "higher_is_better" ? "Больше — лучше" : "Меньше — лучше"}
+                {type === "higher_is_better" ? t('evaluationCriteria.typeHigher') : t('evaluationCriteria.typeLower')}
               </span>
             )
           }

@@ -6,10 +6,12 @@ import { useState } from 'react'
 import { Avatar, Button, Dropdown, Switch } from 'antd'
 import { generatePath, useNavigate } from 'react-router'
 import { ROUTES } from '../../constants/routes'
-import { MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
+import { DownOutlined, MoonOutlined, SunOutlined, UserOutlined } from '@ant-design/icons'
 import { useAuth } from '../../contexts/AuthContext'
 import ChangePasswordModal from '../Modals/ChangePasswordModal'
 import { useTheme } from '../../contexts/ThemeContext'
+import { useLanguage } from '../../contexts/LanguageContext'
+import { useTranslation } from 'react-i18next'
 
 const APPLICANT_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator']
 
@@ -17,13 +19,15 @@ function ContentHeader() {
   let navigate = useNavigate()
   const { auth, logout } = useAuth()
   const { isDark, toggleTheme } = useTheme()
+  const { language, setLanguage } = useLanguage()
+  const { t } = useTranslation()
   const [isCreateElModalOpen, setIsCreateElModalOpen] = useState(false)
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false)
 
   const items = [
     {
       key: 'AccountLabel',
-      label: <span className={styles.userLabel}>{auth?.username ?? 'Пользователь'}</span>,
+      label: <span className={styles.userLabel}>{auth?.username ?? t('header.defaultUser')}</span>,
       disabled: true,
     },
     {
@@ -35,7 +39,7 @@ function ContentHeader() {
       label: (
         <span className={styles.themeToggleItem}>
           {isDark ? <MoonOutlined /> : <SunOutlined />}
-          Тёмная тема
+          {t('nav.darkTheme')}
           <Switch size="small" checked={isDark} />
         </span>
       ),
@@ -43,12 +47,12 @@ function ContentHeader() {
     },
     {
       key: 'ChangePassword',
-      label: 'Сменить пароль',
+      label: t('nav.changePassword'),
       onClick: () => setIsChangePasswordOpen(true),
     },
     {
       key: 'Logout',
-      label: 'Выйти',
+      label: t('nav.logout'),
       onClick: () => {
         logout()
         navigate(ROUTES.LOGIN, { replace: true })
@@ -66,7 +70,7 @@ function ContentHeader() {
     <Header className={styles.header}>
       {APPLICANT_ROLES.includes(auth?.role) && (
         <AddButton
-          title="Новый абитуриент"
+          title={t('header.newApplicant')}
           modalContent={(
             <ApplicantForm
               onFinishCallback={() => setIsCreateElModalOpen(false)}
@@ -74,7 +78,7 @@ function ContentHeader() {
               handleRequestResult={navigateToApplicant}
               buttons={(
                 <>
-                  <Button onClick={() => setIsCreateElModalOpen(false)}>Отмена</Button>
+                  <Button onClick={() => setIsCreateElModalOpen(false)}>{t('common.cancel')}</Button>
                 </>
               )}
             />
@@ -84,6 +88,23 @@ function ContentHeader() {
           withoutContainer={true}
         />
       )}
+
+      <Dropdown
+        className={styles.langSwitcher}
+        menu={{
+          items: [
+            { key: 'ru', label: 'Русский', onClick: () => setLanguage('ru') },
+            { key: 'en', label: 'English', onClick: () => setLanguage('en') },
+          ],
+          selectedKeys: [language],
+        }}
+        placement="bottomRight"
+        trigger={['click']}
+      >
+        <Button size="small" type="text">
+          {language.toUpperCase()} <DownOutlined />
+        </Button>
+      </Dropdown>
 
       <Dropdown
         className={styles.avatar}

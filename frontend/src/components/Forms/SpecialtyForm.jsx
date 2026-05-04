@@ -5,8 +5,10 @@ import { specialtiesApi } from "../../api/specialtiesApi"
 import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
 import { useAuth } from "../../contexts/AuthContext"
+import { useTranslation } from "react-i18next"
 
 function SpecialtyForm(/** @type {any} */ props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -32,7 +34,7 @@ function SpecialtyForm(/** @type {any} */ props) {
         setFaculties(response.data)
         setIsFacultiesLoading(false)
       } catch {
-        messageApi.error("Не удалось получить список факультетов")
+        messageApi.error(t('specialty.form.fetchFacultiesError'))
       }
     }
 
@@ -55,7 +57,7 @@ function SpecialtyForm(/** @type {any} */ props) {
         setDepartments(depts)
         form.setFieldsValue(props.initialValues)
       } catch {
-        messageApi.error("Не удалось получить данные кафедры")
+        messageApi.error(t('specialty.form.fetchDepartmentError'))
       }
     }
 
@@ -75,7 +77,7 @@ function SpecialtyForm(/** @type {any} */ props) {
       setIsDepartmentsLoading(true)
       departmentsApi.getByFacultyId(managerFacultyId)
         .then(r => setDepartments(r.data))
-        .catch(() => messageApi.error("Не удалось получить список кафедр"))
+        .catch(() => messageApi.error(t('specialty.form.fetchDepartmentsError')))
         .finally(() => setIsDepartmentsLoading(false))
     }
   }, [isFacultiesLoading])
@@ -92,7 +94,7 @@ function SpecialtyForm(/** @type {any} */ props) {
       const [_, response] = await Promise.all([delayPromise, responsePromise])
       setDepartments(response.data)
     } catch {
-      messageApi.error("Не удалось получить список кафедр")
+      messageApi.error(t('specialty.form.fetchDepartmentsError'))
     } finally {
       setIsDepartmentsLoading(false)
     }
@@ -125,7 +127,7 @@ function SpecialtyForm(/** @type {any} */ props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка обновления данных специальности на сервере"
+          : t('specialty.form.saveError')
       )
       console.log(err)
     } finally {
@@ -152,18 +154,18 @@ function SpecialtyForm(/** @type {any} */ props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Имя специальности"
+              label={t('specialty.form.nameLabel')}
               name="name"
-              rules={[{ required: true, message: "Имя специальности обязательно для заполнения" }]}
+              rules={[{ required: true, message: t('specialty.form.nameRequired') }]}
             >
               <Input />
             </Form.Item>
 
-            <Form.Item label="Факультет">
+            <Form.Item label={t('specialty.form.facultyLabel')}>
               <Select
                 value={selectedFacultyId}
                 onChange={handleFacultyChange}
-                placeholder="Выберите факультет"
+                placeholder={t('specialty.form.facultyPlaceholder')}
                 disabled={isFacultyManager || !!props.readOnly}
               >
                 {faculties.map(faculty => (
@@ -179,11 +181,11 @@ function SpecialtyForm(/** @type {any} */ props) {
                 <Skeleton paragraph={{ rows: 1 }} active />
               ) : (
                 <Form.Item
-                  label="Кафедра"
+                  label={t('specialty.form.departmentLabel')}
                   name="departmentId"
-                  rules={[{ required: true, message: "Специальность должна принадлежать кафедре" }]}
+                  rules={[{ required: true, message: t('specialty.form.departmentRequired') }]}
                 >
-                  <Select placeholder="Выберите кафедру">
+                  <Select placeholder={t('specialty.form.departmentPlaceholder')}>
                     {departments.map(department => (
                       <Select.Option value={department.id} key={department.id}>
                         {department.name}
@@ -199,7 +201,7 @@ function SpecialtyForm(/** @type {any} */ props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить специальность' : 'Добавить специальность'}
+                {props.elementId ? t('specialty.form.updateButton') : t('specialty.form.addButton')}
               </Button>
             )}
             {props.buttons}

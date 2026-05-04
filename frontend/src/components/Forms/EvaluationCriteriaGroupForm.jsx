@@ -2,8 +2,10 @@ import { Button, Form, Input, message, Space } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { evaluationCriteriaGroupsApi } from "../../api/evaluationCriteriaGroupsApi"
+import { useTranslation } from "react-i18next"
 
 function EvaluationCriteriaGroupForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -34,7 +36,7 @@ function EvaluationCriteriaGroupForm(props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка сохранения группы оценочных параметров на сервере"
+          : t('evaluationCriteriaGroup.form.saveError')
       )
       console.log(err)
     } finally {
@@ -61,12 +63,12 @@ function EvaluationCriteriaGroupForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Название группы оценочных параметров"
+              label={t('evaluationCriteriaGroup.form.nameLabel')}
               name="name"
               rules={[
                 {
                   required: true,
-                  message: "Название группы обязательно для заполнения",
+                  message: t('evaluationCriteriaGroup.form.nameRequired'),
                 }
               ]}
             >
@@ -78,7 +80,7 @@ function EvaluationCriteriaGroupForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить группу' : 'Добавить группу'}
+                {props.elementId ? t('evaluationCriteriaGroup.form.updateButton') : t('evaluationCriteriaGroup.form.addButton')}
               </Button>
             )}
             {props.buttons}

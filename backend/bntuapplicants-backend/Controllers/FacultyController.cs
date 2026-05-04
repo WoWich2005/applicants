@@ -1,24 +1,27 @@
-﻿using bntuapplicants_backend.Constants;
+using bntuapplicants_backend.Constants;
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Requests;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [ApiController]
     [Route("/api/v1/faculties")]
     public class FacultyController : ControllerBase
     {
         private readonly IFacultyRepository _repository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public FacultyController(IFacultyRepository repository)
+        public FacultyController(IFacultyRepository repository, IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -61,7 +64,7 @@ namespace bntuapplicants_backend.Controllers
         public async Task<ActionResult<Faculty>> Create([FromBody] FacultyRequestDto dto)
         {
             if (await _repository.ExistsByNameAsync(dto.Name))
-                return Conflict("Факультет с таким названием уже существует");
+                return Conflict(new { message = (string)_localizer["Faculty.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new Faculty()
             {
@@ -69,7 +72,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать факультет");
+                return StatusCode(500, new { message = (string)_localizer["Faculty.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetByID),
@@ -86,11 +89,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Факультет с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["Faculty.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении факультета");
+                return StatusCode(500, new { message = (string)_localizer["Faculty.DeleteError"] });
 
             return NoContent();
         }
@@ -104,10 +107,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Факультет с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["Faculty.NotFound", id] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, id))
-                return Conflict("Факультет с таким названием уже существует");
+                return Conflict(new { message = (string)_localizer["Faculty.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new Faculty
             {
@@ -115,7 +118,7 @@ namespace bntuapplicants_backend.Controllers
                 Name = dto.Name
             });
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении факультета");
+                return StatusCode(500, new { message = (string)_localizer["Faculty.UpdateError"] });
 
             return NoContent();
         }

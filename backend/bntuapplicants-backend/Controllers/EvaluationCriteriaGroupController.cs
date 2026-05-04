@@ -5,20 +5,23 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [ApiController]
     [Route("/api/v1/evaluation_criteria_groups")]
     public class EvaluationCriteriaGroupController : ControllerBase
     {
         private readonly IEvaluationCriteriaGroupRepository _repository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public EvaluationCriteriaGroupController(IEvaluationCriteriaGroupRepository repository)
+        public EvaluationCriteriaGroupController(IEvaluationCriteriaGroupRepository repository, IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -66,7 +69,7 @@ namespace bntuapplicants_backend.Controllers
         public async Task<ActionResult<EvaluationCriteriaGroup>> Create([FromBody] EvaluationCriteriaGroupRequestDto dto)
         {
             if (await _repository.ExistsByNameAsync(dto.Name))
-                return Conflict("Группа оценочных параметров с таким названием уже существует");
+                return Conflict(new { message = (string)_localizer["EvaluationCriteriaGroup.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new EvaluationCriteriaGroup
             {
@@ -74,7 +77,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать группу оценочных параметров");
+                return StatusCode(500, new { message = (string)_localizer["EvaluationCriteriaGroup.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -92,10 +95,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Группа оценочных параметров с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["EvaluationCriteriaGroup.NotFound", id] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, id))
-                return Conflict("Группа оценочных параметров с таким названием уже существует");
+                return Conflict(new { message = (string)_localizer["EvaluationCriteriaGroup.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new EvaluationCriteriaGroup
             {
@@ -104,7 +107,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении группы оценочных параметров");
+                return StatusCode(500, new { message = (string)_localizer["EvaluationCriteriaGroup.UpdateError"] });
 
             return NoContent();
         }
@@ -117,11 +120,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Группа оценочных параметров с id {id} не найдена");
+                return NotFound(new { message = (string)_localizer["EvaluationCriteriaGroup.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении группы оценочных параметров");
+                return StatusCode(500, new { message = (string)_localizer["EvaluationCriteriaGroup.DeleteError"] });
 
             return NoContent();
         }

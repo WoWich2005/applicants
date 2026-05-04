@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+
+  <!-- Auth -->
+  <data name="Auth.InvalidCredentials" xml:space="preserve"><value>Invalid login or password</value></data>
+  <data name="Auth.AccountDeactivated" xml:space="preserve"><value>Account is deactivated</value></data>
+  <data name="Auth.WrongCurrentPassword" xml:space="preserve"><value>Current password is incorrect</value></data>
+
+  <!-- Faculty DTO -->
+  <data name="Faculty.Name.Required" xml:space="preserve"><value>Faculty name is required</value></data>
+  <data name="Faculty.Name.MaxLength100" xml:space="preserve"><value>Name must not exceed 100 characters</value></data>
+  <!-- Faculty controller -->
+  <data name="Faculty.NameExists" xml:space="preserve"><value>A faculty with this name already exists</value></data>
+  <data name="Faculty.CreateError" xml:space="preserve"><value>Error: failed to create faculty</value></data>
+  <data name="Faculty.NotFound" xml:space="preserve"><value>Faculty with id {0} not found</value></data>
+  <data name="Faculty.DeleteError" xml:space="preserve"><value>Error deleting faculty</value></data>
+  <data name="Faculty.UpdateError" xml:space="preserve"><value>Error updating faculty</value></data>
+
+  <!-- Department DTO -->
+  <data name="Department.Name.Required" xml:space="preserve"><value>Department name is required</value></data>
+  <data name="Department.Name.MaxLength255" xml:space="preserve"><value>Name must not exceed 255 characters</value></data>
+  <data name="Department.FacultyId.Required" xml:space="preserve"><value>Faculty is required</value></data>
+  <!-- Department controller -->
+  <data name="Department.NameExists" xml:space="preserve"><value>A department with this name already exists in this faculty</value></data>
+  <data name="Department.CreateError" xml:space="preserve"><value>Error: failed to create department</value></data>
+  <data name="Department.NotFound" xml:space="preserve"><value>Department with id {0} not found</value></data>
+  <data name="Department.UpdateError" xml:space="preserve"><value>Error updating department</value></data>
+  <data name="Department.DeleteError" xml:space="preserve"><value>Error deleting department</value></data>
+
+  <!-- Specialty DTO -->
+  <data name="Specialty.Name.Required" xml:space="preserve"><value>Specialty name is required</value></data>
+  <data name="Specialty.Name.MaxLength100" xml:space="preserve"><value>Specialty name must not exceed 100 characters</value></data>
+  <data name="Specialty.DepartmentId.Required" xml:space="preserve"><value>Specialty must belong to a department</value></data>
+  <!-- Specialty controller -->
+  <data name="Specialty.NameExists" xml:space="preserve"><value>A specialty with this name already exists in this department</value></data>
+  <data name="Specialty.CreateError" xml:space="preserve"><value>Error: failed to create specialty</value></data>
+  <data name="Specialty.NotFound" xml:space="preserve"><value>Specialty with id {0} not found</value></data>
+  <data name="Specialty.DeleteError" xml:space="preserve"><value>Error deleting specialty</value></data>
+  <data name="Specialty.UpdateError" xml:space="preserve"><value>Error updating specialty</value></data>
+
+  <!-- EvaluationCriteria DTO -->
+  <data name="EvaluationCriteria.Name.Required" xml:space="preserve"><value>Evaluation criteria name is required</value></data>
+  <data name="EvaluationCriteria.Name.MaxLength255" xml:space="preserve"><value>Name must not exceed 255 characters</value></data>
+  <data name="EvaluationCriteria.MinValue.Required" xml:space="preserve"><value>Minimum value is required</value></data>
+  <data name="EvaluationCriteria.MaxValue.Required" xml:space="preserve"><value>Maximum value is required</value></data>
+  <data name="EvaluationCriteria.Type.Required" xml:space="preserve"><value>Type is required</value></data>
+  <data name="EvaluationCriteria.Type.Invalid" xml:space="preserve"><value>Invalid type value</value></data>
+  <!-- EvaluationCriteria controller -->
+  <data name="EvaluationCriteria.NameExists" xml:space="preserve"><value>An evaluation criterion with this name already exists</value></data>
+  <data name="EvaluationCriteria.CreateError" xml:space="preserve"><value>Error: failed to create evaluation criterion</value></data>
+  <data name="EvaluationCriteria.NotFound" xml:space="preserve"><value>Evaluation criterion with id {0} not found</value></data>
+  <data name="EvaluationCriteria.NotFoundSimple" xml:space="preserve"><value>Evaluation criterion not found</value></data>
+  <data name="EvaluationCriteria.UpdateError" xml:space="preserve"><value>Error updating evaluation criterion</value></data>
+  <data name="EvaluationCriteria.DeleteError" xml:space="preserve"><value>Error deleting evaluation criterion</value></data>
+
+  <!-- EvaluationCriteriaGroup DTO -->
+  <data name="EvaluationCriteriaGroup.Name.Required" xml:space="preserve"><value>Evaluation criteria group name is required</value></data>
+  <data name="EvaluationCriteriaGroup.Name.MaxLength255" xml:space="preserve"><value>Name must not exceed 255 characters</value></data>
+  <!-- EvaluationCriteriaGroup controller -->
+  <data name="EvaluationCriteriaGroup.NameExists" xml:space="preserve"><value>An evaluation criteria group with this name already exists</value></data>
+  <data name="EvaluationCriteriaGroup.CreateError" xml:space="preserve"><value>Error: failed to create evaluation criteria group</value></data>
+  <data name="EvaluationCriteriaGroup.NotFound" xml:space="preserve"><value>Evaluation criteria group with id {0} not found</value></data>
+  <data name="EvaluationCriteriaGroup.UpdateError" xml:space="preserve"><value>Error updating evaluation criteria group</value></data>
+  <data name="EvaluationCriteriaGroup.DeleteError" xml:space="preserve"><value>Error deleting evaluation criteria group</value></data>
+
+  <!-- EvaluationCriteriaGroupItem DTO -->
+  <data name="EvaluationCriteriaGroupItem.GroupId.Required" xml:space="preserve"><value>Group ID is required</value></data>
+  <data name="EvaluationCriteriaGroupItem.CriteriaId.Required" xml:space="preserve"><value>Criteria ID is required</value></data>
+  <data name="EvaluationCriteriaGroupItem.Priority.Required" xml:space="preserve"><value>Priority is required</value></data>
+  <data name="EvaluationCriteriaGroupItem.Priority.Range" xml:space="preserve"><value>Priority must be a positive integer</value></data>
+  <!-- EvaluationCriteriaGroupItem controller -->
+  <data name="EvaluationCriteriaGroupItem.CreateError" xml:space="preserve"><value>Error: failed to add evaluation criterion to group</value></data>
+
+  <!-- CompetitionList DTO -->
+  <data name="CompetitionList.Name.Required" xml:space="preserve"><value>Competition list name is required</value></data>
+  <data name="CompetitionList.Name.MaxLength255" xml:space="preserve"><value>Name must not exceed 255 characters</value></data>
+  <data name="CompetitionList.Plan.Required" xml:space="preserve"><value>Enrollment plan is required</value></data>
+  <data name="CompetitionList.Plan.Range" xml:space="preserve"><value>Enrollment plan must be a positive integer</value></data>
+  <data name="CompetitionList.SpecialtyId.Required" xml:space="preserve"><value>Specialty ID is required</value></data>
+  <!-- CompetitionList controller -->
+  <data name="CompetitionList.NameExists" xml:space="preserve"><value>A competition list with this name already exists in this specialty</value></data>
+  <data name="CompetitionList.CreateError" xml:space="preserve"><value>Error: failed to create competition list</value></data>
+  <data name="CompetitionList.NotFound" xml:space="preserve"><value>Competition list with id {0} not found</value></data>
+  <data name="CompetitionList.UpdateError" xml:space="preserve"><value>Error updating competition list</value></data>
+  <data name="CompetitionList.DeleteError" xml:space="preserve"><value>Error deleting competition list</value></data>
+
+  <!-- AdmissionCategory DTO -->
+  <data name="AdmissionCategory.Name.Required" xml:space="preserve"><value>Admission category name is required</value></data>
+  <data name="AdmissionCategory.Name.MaxLength255" xml:space="preserve"><value>Name must not exceed 255 characters</value></data>
+  <data name="AdmissionCategory.CompetitionListId.Required" xml:space="preserve"><value>Competition list ID is required</value></data>
+  <data name="AdmissionCategory.EvaluationCriteriaGroupId.Required" xml:space="preserve"><value>Evaluation criteria group ID is required</value></data>
+  <data name="AdmissionCategory.Quota.Required" xml:space="preserve"><value>Quota is required</value></data>
+  <data name="AdmissionCategory.Quota.Range" xml:space="preserve"><value>Quota must be a positive integer</value></data>
+  <data name="AdmissionCategory.Priority.Required" xml:space="preserve"><value>Priority is required</value></data>
+  <data name="AdmissionCategory.Priority.Range" xml:space="preserve"><value>Priority must be a positive integer</value></data>
+  <!-- AdmissionCategory controller -->
+  <data name="AdmissionCategory.NameExists" xml:space="preserve"><value>An admission category with this name already exists in this competition list</value></data>
+  <data name="AdmissionCategory.CreateError" xml:space="preserve"><value>Error: failed to create admission category</value></data>
+  <data name="AdmissionCategory.NotFound" xml:space="preserve"><value>Admission category with id {0} not found</value></data>
+  <data name="AdmissionCategory.UpdateError" xml:space="preserve"><value>Error updating admission category</value></data>
+  <data name="AdmissionCategory.DeleteError" xml:space="preserve"><value>Error deleting admission category</value></data>
+
+  <!-- Applicant DTO -->
+  <data name="Applicant.Name.Required" xml:space="preserve"><value>Applicant name is required</value></data>
+  <data name="Applicant.Name.MaxLength255" xml:space="preserve"><value>Name must not exceed 255 characters</value></data>
+  <data name="Applicant.ExternalId.Required" xml:space="preserve"><value>Applicant ID is required</value></data>
+  <data name="Applicant.ExternalId.MaxLength255" xml:space="preserve"><value>ID must not exceed 255 characters</value></data>
+  <!-- Applicant controller -->
+  <data name="Applicant.CreateError" xml:space="preserve"><value>Error: failed to create applicant</value></data>
+  <data name="Applicant.ExternalIdExists" xml:space="preserve"><value>An applicant with this ID already exists</value></data>
+  <data name="Applicant.NotFound" xml:space="preserve"><value>Applicant with id {0} not found</value></data>
+  <data name="Applicant.DeleteError" xml:space="preserve"><value>Error deleting applicant</value></data>
+  <data name="Applicant.UpdateError" xml:space="preserve"><value>Error updating applicant data</value></data>
+
+  <!-- ApplicantAdmissionCategory DTO -->
+  <data name="ApplicantAdmissionCategory.ApplicantId.Required" xml:space="preserve"><value>Applicant ID is required</value></data>
+  <data name="ApplicantAdmissionCategory.AdmissionCategoryId.Required" xml:space="preserve"><value>Admission category ID is required</value></data>
+  <data name="ApplicantAdmissionCategory.SelectionPriority.Required" xml:space="preserve"><value>Selection priority is required</value></data>
+  <data name="ApplicantAdmissionCategory.SelectionPriority.Range" xml:space="preserve"><value>Priority must be a positive integer</value></data>
+  <!-- ApplicantAdmissionCategory controller -->
+  <data name="ApplicantAdmissionCategory.CreateError" xml:space="preserve"><value>Error: failed to add admission category for applicant</value></data>
+
+  <!-- ApplicantEvaluationValue DTO -->
+  <data name="ApplicantEvaluationValue.ApplicantId.Required" xml:space="preserve"><value>Applicant ID is required</value></data>
+  <data name="ApplicantEvaluationValue.EvaluationCriteriaId.Required" xml:space="preserve"><value>Evaluation criteria ID is required</value></data>
+  <data name="ApplicantEvaluationValue.Value.Required" xml:space="preserve"><value>Value is required</value></data>
+  <data name="ApplicantEvaluationValue.Value.Range" xml:space="preserve"><value>Value must be a positive integer</value></data>
+  <!-- ApplicantEvaluationValue controller -->
+  <data name="ApplicantEvaluationValue.CreateError" xml:space="preserve"><value>Error: failed to add evaluation value for applicant</value></data>
+  <data name="ApplicantEvaluationValue.ValueOutOfRange" xml:space="preserve"><value>Value {0} is outside the allowed range [{1}, {2}] for criterion "{3}"</value></data>
+
+  <!-- Generic record -->
+  <data name="Record.NotFound" xml:space="preserve"><value>Record with id {0} not found</value></data>
+  <data name="Record.UpdateError" xml:space="preserve"><value>Error updating record</value></data>
+  <data name="Record.DeleteError" xml:space="preserve"><value>Error deleting record</value></data>
+
+  <!-- User -->
+  <data name="User.UsernameExists" xml:space="preserve"><value>A user with this name already exists</value></data>
+  <data name="User.CannotDeleteSelf" xml:space="preserve"><value>Cannot delete your own account</value></data>
+  <data name="User.CannotDeleteLastSuperAdmin" xml:space="preserve"><value>Cannot delete the last super administrator</value></data>
+
+  <!-- Result -->
+  <data name="Result.FacultyNotFound" xml:space="preserve"><value>Faculty with ID {0} not found</value></data>
+  <data name="Result.NoSpecialties" xml:space="preserve"><value>No specialties found for the specified faculty</value></data>
+</root>

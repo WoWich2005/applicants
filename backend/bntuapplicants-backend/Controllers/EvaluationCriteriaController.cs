@@ -5,20 +5,23 @@ using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Controllers
 {
-    
+
     [ApiController]
     [Route("/api/v1/evaluation_criteria")]
     public class EvaluationCriteriaController : ControllerBase
     {
         private readonly IEvaluationCriteriaRepository _repository;
+        private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public EvaluationCriteriaController(IEvaluationCriteriaRepository repository)
+        public EvaluationCriteriaController(IEvaluationCriteriaRepository repository, IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
+            _localizer = localizer;
         }
 
         [HttpGet]
@@ -67,7 +70,7 @@ namespace bntuapplicants_backend.Controllers
         public async Task<ActionResult<EvaluationCriteria>> Create([FromBody] EvaluationCriteriaRequestDto dto)
         {
             if (await _repository.ExistsByNameAsync(dto.Name))
-                return Conflict("Оценочный параметр с таким названием уже существует");
+                return Conflict(new { message = (string)_localizer["EvaluationCriteria.NameExists"] });
 
             var createdRecord = await _repository.CreateAsync(new EvaluationCriteria
             {
@@ -78,7 +81,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (createdRecord == null)
-                return StatusCode(500, "Ошибка. Не удалось создать оценочный параметр");
+                return StatusCode(500, new { message = (string)_localizer["EvaluationCriteria.CreateError"] });
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -96,10 +99,10 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Оценочный параметр с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["EvaluationCriteria.NotFound", id] });
 
             if (await _repository.ExistsByNameAsync(dto.Name, id))
-                return Conflict("Оценочный параметр с таким названием уже существует");
+                return Conflict(new { message = (string)_localizer["EvaluationCriteria.NameExists"] });
 
             bool success = await _repository.UpdateAsync(new EvaluationCriteria
             {
@@ -111,7 +114,7 @@ namespace bntuapplicants_backend.Controllers
             });
 
             if (!success)
-                return StatusCode(500, "Ошибка при обновлении оценочного параметра");
+                return StatusCode(500, new { message = (string)_localizer["EvaluationCriteria.UpdateError"] });
 
             return NoContent();
         }
@@ -124,11 +127,11 @@ namespace bntuapplicants_backend.Controllers
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
-                return NotFound($"Оценочный параметр с id {id} не найден");
+                return NotFound(new { message = (string)_localizer["EvaluationCriteria.NotFound", id] });
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
-                return StatusCode(500, "Ошибка при удалении оценочного параметра");
+                return StatusCode(500, new { message = (string)_localizer["EvaluationCriteria.DeleteError"] });
 
             return NoContent();
         }

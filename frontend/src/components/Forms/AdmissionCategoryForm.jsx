@@ -3,8 +3,10 @@ import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { admissionCategoriesApi } from "../../api/admissionCategoriesApi"
 import { evaluationCriteriaGroupsApi } from "../../api/evaluationCriteriaGroupsApi"
+import { useTranslation } from "react-i18next"
 
 function AdmissionCategoryForm(props) {
+  const { t } = useTranslation()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -19,7 +21,7 @@ function AdmissionCategoryForm(props) {
         setGroups(response.data)
         setIsGroupsLoading(false)
       } catch {
-        messageApi.error("Не удалось получить список групп оценочных параметров")
+        messageApi.error(t('admissionCategory.form.fetchGroupsError'))
       }
     }
 
@@ -55,7 +57,7 @@ function AdmissionCategoryForm(props) {
       messageApi.error(
         typeof serverMessage === 'string' && serverMessage.length > 0
           ? serverMessage
-          : "Ошибка сохранения категории приема на сервере"
+          : t('admissionCategory.form.saveError')
       )
     } finally {
       setIsLoading(false)
@@ -81,17 +83,17 @@ function AdmissionCategoryForm(props) {
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item
-              label="Название категории приема"
+              label={t('admissionCategory.form.nameLabel')}
               name="name"
-              rules={[{ required: true, message: "Название обязательно для заполнения" }]}
+              rules={[{ required: true, message: t('admissionCategory.form.nameRequired') }]}
             >
               <Input />
             </Form.Item>
 
             <Form.Item
-              label="Группа оценочных параметров"
+              label={t('admissionCategory.form.groupLabel')}
               name="evaluationCriteriaGroupId"
-              rules={[{ required: true, message: "Группа оценочных параметров обязательна" }]}
+              rules={[{ required: true, message: t('admissionCategory.form.groupRequired') }]}
             >
               <Select showSearch filterOption={(input, option) =>
                 option.label?.toLowerCase().includes(input.toLowerCase())
@@ -103,17 +105,17 @@ function AdmissionCategoryForm(props) {
             </Form.Item>
 
             <Form.Item
-              label="Квота"
+              label={t('admissionCategory.form.quotaLabel')}
               name="quota"
-              rules={[{ required: true, message: "Квота обязательна" }]}
+              rules={[{ required: true, message: t('admissionCategory.form.quotaRequired') }]}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
 
             <Form.Item
-              label="Приоритет категории"
+              label={t('admissionCategory.form.priorityLabel')}
               name="priority"
-              rules={[{ required: true, message: "Приоритет обязателен" }]}
+              rules={[{ required: true, message: t('admissionCategory.form.priorityRequired') }]}
             >
               <InputNumber min={1} style={{ width: '100%' }} />
             </Form.Item>
@@ -123,7 +125,7 @@ function AdmissionCategoryForm(props) {
           <Space>
             {!props.readOnly && (
               <Button type="primary" htmlType="submit" loading={isLoading}>
-                {props.elementId ? 'Обновить категорию' : 'Добавить категорию'}
+                {props.elementId ? t('admissionCategory.form.updateButton') : t('admissionCategory.form.addButton')}
               </Button>
             )}
             {props.buttons}

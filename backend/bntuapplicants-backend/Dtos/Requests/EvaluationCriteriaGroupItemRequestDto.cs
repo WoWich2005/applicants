@@ -3,17 +3,17 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Dtos.Requests
 {
-    
+
     public class EvaluationCriteriaGroupItemRequestDto
     {
-        [Required(ErrorMessage = "Id группы обязателен")]
+        [Required(ErrorMessage = "EvaluationCriteriaGroupItem.GroupId.Required")]
         public int GroupId { get; set; }
 
-        [Required(ErrorMessage = "Id оценочного параметра обязателен")]
+        [Required(ErrorMessage = "EvaluationCriteriaGroupItem.CriteriaId.Required")]
         public int CriteriaId { get; set; }
 
-        [Required(ErrorMessage = "Приоритет обязателен")]
-        [Range(1, int.MaxValue, ErrorMessage = "Приоритет должен быть натуральным числом")]
+        [Required(ErrorMessage = "EvaluationCriteriaGroupItem.Priority.Required")]
+        [Range(1, int.MaxValue, ErrorMessage = "EvaluationCriteriaGroupItem.Priority.Range")]
         public int Priority { get; set; }
     }
 }

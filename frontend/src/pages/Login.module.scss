@@ -1,9 +1,15 @@
 .wrapper {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 16px;
   background: #f0f2f5;
+}
+
+.langSwitcher {
+  align-self: center;
 }
 
 :global([data-theme="dark"]) .wrapper {

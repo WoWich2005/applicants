@@ -1,0 +1,172 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype"><value>text/microsoft-resx</value></resheader>
+  <resheader name="version"><value>2.0</value></resheader>
+
+  <!-- Auth -->
+  <data name="Auth.InvalidCredentials" xml:space="preserve"><value>Неверный логин или пароль</value></data>
+  <data name="Auth.AccountDeactivated" xml:space="preserve"><value>Аккаунт деактивирован</value></data>
+  <data name="Auth.WrongCurrentPassword" xml:space="preserve"><value>Неверный текущий пароль</value></data>
+
+  <!-- Faculty DTO -->
+  <data name="Faculty.Name.Required" xml:space="preserve"><value>Название факультета обязательно</value></data>
+  <data name="Faculty.Name.MaxLength100" xml:space="preserve"><value>Название не должно превышать 100 символов</value></data>
+  <!-- Faculty controller -->
+  <data name="Faculty.NameExists" xml:space="preserve"><value>Факультет с таким названием уже существует</value></data>
+  <data name="Faculty.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать факультет</value></data>
+  <data name="Faculty.NotFound" xml:space="preserve"><value>Факультет с id {0} не найден</value></data>
+  <data name="Faculty.DeleteError" xml:space="preserve"><value>Ошибка при удалении факультета</value></data>
+  <data name="Faculty.UpdateError" xml:space="preserve"><value>Ошибка при обновлении факультета</value></data>
+
+  <!-- Department DTO -->
+  <data name="Department.Name.Required" xml:space="preserve"><value>Название кафедры обязательно</value></data>
+  <data name="Department.Name.MaxLength255" xml:space="preserve"><value>Название не должно превышать 255 символов</value></data>
+  <data name="Department.FacultyId.Required" xml:space="preserve"><value>Факультет обязателен</value></data>
+  <!-- Department controller -->
+  <data name="Department.NameExists" xml:space="preserve"><value>Кафедра с таким названием уже существует в данном факультете</value></data>
+  <data name="Department.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать кафедру</value></data>
+  <data name="Department.NotFound" xml:space="preserve"><value>Кафедра с id {0} не найдена</value></data>
+  <data name="Department.UpdateError" xml:space="preserve"><value>Ошибка при обновлении кафедры</value></data>
+  <data name="Department.DeleteError" xml:space="preserve"><value>Ошибка при удалении кафедры</value></data>
+
+  <!-- Specialty DTO -->
+  <data name="Specialty.Name.Required" xml:space="preserve"><value>Имя специальности обязательно</value></data>
+  <data name="Specialty.Name.MaxLength100" xml:space="preserve"><value>Имя специальности не должно превышать 100 символов</value></data>
+  <data name="Specialty.DepartmentId.Required" xml:space="preserve"><value>Специальность должна принадлежать кафедре</value></data>
+  <!-- Specialty controller -->
+  <data name="Specialty.NameExists" xml:space="preserve"><value>Специальность с таким названием уже существует в данной кафедре</value></data>
+  <data name="Specialty.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать специальность</value></data>
+  <data name="Specialty.NotFound" xml:space="preserve"><value>Специальность с id {0} не найдена</value></data>
+  <data name="Specialty.DeleteError" xml:space="preserve"><value>Ошибка при удалении специальности</value></data>
+  <data name="Specialty.UpdateError" xml:space="preserve"><value>Ошибка при обновлении данных специальности</value></data>
+
+  <!-- EvaluationCriteria DTO -->
+  <data name="EvaluationCriteria.Name.Required" xml:space="preserve"><value>Название оценочного параметра обязательно</value></data>
+  <data name="EvaluationCriteria.Name.MaxLength255" xml:space="preserve"><value>Название не должно превышать 255 символов</value></data>
+  <data name="EvaluationCriteria.MinValue.Required" xml:space="preserve"><value>Минимальное значение обязательно</value></data>
+  <data name="EvaluationCriteria.MaxValue.Required" xml:space="preserve"><value>Максимальное значение обязательно</value></data>
+  <data name="EvaluationCriteria.Type.Required" xml:space="preserve"><value>Тип обязателен</value></data>
+  <data name="EvaluationCriteria.Type.Invalid" xml:space="preserve"><value>Недопустимое значение типа</value></data>
+  <!-- EvaluationCriteria controller -->
+  <data name="EvaluationCriteria.NameExists" xml:space="preserve"><value>Оценочный параметр с таким названием уже существует</value></data>
+  <data name="EvaluationCriteria.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать оценочный параметр</value></data>
+  <data name="EvaluationCriteria.NotFound" xml:space="preserve"><value>Оценочный параметр с id {0} не найден</value></data>
+  <data name="EvaluationCriteria.NotFoundSimple" xml:space="preserve"><value>Оценочный параметр не найден</value></data>
+  <data name="EvaluationCriteria.UpdateError" xml:space="preserve"><value>Ошибка при обновлении оценочного параметра</value></data>
+  <data name="EvaluationCriteria.DeleteError" xml:space="preserve"><value>Ошибка при удалении оценочного параметра</value></data>
+
+  <!-- EvaluationCriteriaGroup DTO -->
+  <data name="EvaluationCriteriaGroup.Name.Required" xml:space="preserve"><value>Название группы оценочных параметров обязательно</value></data>
+  <data name="EvaluationCriteriaGroup.Name.MaxLength255" xml:space="preserve"><value>Название не должно превышать 255 символов</value></data>
+  <!-- EvaluationCriteriaGroup controller -->
+  <data name="EvaluationCriteriaGroup.NameExists" xml:space="preserve"><value>Группа оценочных параметров с таким названием уже существует</value></data>
+  <data name="EvaluationCriteriaGroup.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать группу оценочных параметров</value></data>
+  <data name="EvaluationCriteriaGroup.NotFound" xml:space="preserve"><value>Группа оценочных параметров с id {0} не найдена</value></data>
+  <data name="EvaluationCriteriaGroup.UpdateError" xml:space="preserve"><value>Ошибка при обновлении группы оценочных параметров</value></data>
+  <data name="EvaluationCriteriaGroup.DeleteError" xml:space="preserve"><value>Ошибка при удалении группы оценочных параметров</value></data>
+
+  <!-- EvaluationCriteriaGroupItem DTO -->
+  <data name="EvaluationCriteriaGroupItem.GroupId.Required" xml:space="preserve"><value>Id группы обязателен</value></data>
+  <data name="EvaluationCriteriaGroupItem.CriteriaId.Required" xml:space="preserve"><value>Id оценочного параметра обязателен</value></data>
+  <data name="EvaluationCriteriaGroupItem.Priority.Required" xml:space="preserve"><value>Приоритет обязателен</value></data>
+  <data name="EvaluationCriteriaGroupItem.Priority.Range" xml:space="preserve"><value>Приоритет должен быть натуральным числом</value></data>
+  <!-- EvaluationCriteriaGroupItem controller -->
+  <data name="EvaluationCriteriaGroupItem.CreateError" xml:space="preserve"><value>Ошибка. Не удалось добавить оценочный параметр в группу</value></data>
+
+  <!-- CompetitionList DTO -->
+  <data name="CompetitionList.Name.Required" xml:space="preserve"><value>Название конкурсного списка обязательно</value></data>
+  <data name="CompetitionList.Name.MaxLength255" xml:space="preserve"><value>Название не должно превышать 255 символов</value></data>
+  <data name="CompetitionList.Plan.Required" xml:space="preserve"><value>План набора обязателен</value></data>
+  <data name="CompetitionList.Plan.Range" xml:space="preserve"><value>План набора должен быть натуральным числом</value></data>
+  <data name="CompetitionList.SpecialtyId.Required" xml:space="preserve"><value>Id специальности обязателен</value></data>
+  <!-- CompetitionList controller -->
+  <data name="CompetitionList.NameExists" xml:space="preserve"><value>Конкурсный список с таким названием уже существует в данной специальности</value></data>
+  <data name="CompetitionList.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать конкурсный список</value></data>
+  <data name="CompetitionList.NotFound" xml:space="preserve"><value>Конкурсный список с id {0} не найден</value></data>
+  <data name="CompetitionList.UpdateError" xml:space="preserve"><value>Ошибка при обновлении конкурсного списка</value></data>
+  <data name="CompetitionList.DeleteError" xml:space="preserve"><value>Ошибка при удалении конкурсного списка</value></data>
+
+  <!-- AdmissionCategory DTO -->
+  <data name="AdmissionCategory.Name.Required" xml:space="preserve"><value>Название категории приема обязательно</value></data>
+  <data name="AdmissionCategory.Name.MaxLength255" xml:space="preserve"><value>Название не должно превышать 255 символов</value></data>
+  <data name="AdmissionCategory.CompetitionListId.Required" xml:space="preserve"><value>Id конкурсного списка обязателен</value></data>
+  <data name="AdmissionCategory.EvaluationCriteriaGroupId.Required" xml:space="preserve"><value>Id группы оценочных параметров обязателен</value></data>
+  <data name="AdmissionCategory.Quota.Required" xml:space="preserve"><value>Квота обязательна</value></data>
+  <data name="AdmissionCategory.Quota.Range" xml:space="preserve"><value>Квота должна быть натуральным числом</value></data>
+  <data name="AdmissionCategory.Priority.Required" xml:space="preserve"><value>Приоритет обязателен</value></data>
+  <data name="AdmissionCategory.Priority.Range" xml:space="preserve"><value>Приоритет должен быть натуральным числом</value></data>
+  <!-- AdmissionCategory controller -->
+  <data name="AdmissionCategory.NameExists" xml:space="preserve"><value>Категория приема с таким названием уже существует в данном конкурсном списке</value></data>
+  <data name="AdmissionCategory.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать категорию приема</value></data>
+  <data name="AdmissionCategory.NotFound" xml:space="preserve"><value>Категория приема с id {0} не найдена</value></data>
+  <data name="AdmissionCategory.UpdateError" xml:space="preserve"><value>Ошибка при обновлении категории приема</value></data>
+  <data name="AdmissionCategory.DeleteError" xml:space="preserve"><value>Ошибка при удалении категории приема</value></data>
+
+  <!-- Applicant DTO -->
+  <data name="Applicant.Name.Required" xml:space="preserve"><value>Имя абитуриента обязательно</value></data>
+  <data name="Applicant.Name.MaxLength255" xml:space="preserve"><value>Имя не должно превышать 255 символов</value></data>
+  <data name="Applicant.ExternalId.Required" xml:space="preserve"><value>ID абитуриента обязателен</value></data>
+  <data name="Applicant.ExternalId.MaxLength255" xml:space="preserve"><value>ID не должен превышать 255 символов</value></data>
+  <!-- Applicant controller -->
+  <data name="Applicant.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать абитуриента</value></data>
+  <data name="Applicant.ExternalIdExists" xml:space="preserve"><value>Абитуриент с таким ID уже существует</value></data>
+  <data name="Applicant.NotFound" xml:space="preserve"><value>Абитуриент с id {0} не найден</value></data>
+  <data name="Applicant.DeleteError" xml:space="preserve"><value>Ошибка при удалении абитуриента</value></data>
+  <data name="Applicant.UpdateError" xml:space="preserve"><value>Ошибка при обновлении данных абитуриента</value></data>
+
+  <!-- ApplicantAdmissionCategory DTO -->
+  <data name="ApplicantAdmissionCategory.ApplicantId.Required" xml:space="preserve"><value>Id абитуриента обязателен</value></data>
+  <data name="ApplicantAdmissionCategory.AdmissionCategoryId.Required" xml:space="preserve"><value>Id категории приема обязателен</value></data>
+  <data name="ApplicantAdmissionCategory.SelectionPriority.Required" xml:space="preserve"><value>Приоритет выбора обязателен</value></data>
+  <data name="ApplicantAdmissionCategory.SelectionPriority.Range" xml:space="preserve"><value>Приоритет должен быть натуральным числом</value></data>
+  <!-- ApplicantAdmissionCategory controller -->
+  <data name="ApplicantAdmissionCategory.CreateError" xml:space="preserve"><value>Ошибка. Не удалось добавить категорию приема для абитуриента</value></data>
+
+  <!-- ApplicantEvaluationValue DTO -->
+  <data name="ApplicantEvaluationValue.ApplicantId.Required" xml:space="preserve"><value>Id абитуриента обязателен</value></data>
+  <data name="ApplicantEvaluationValue.EvaluationCriteriaId.Required" xml:space="preserve"><value>Id оценочного параметра обязателен</value></data>
+  <data name="ApplicantEvaluationValue.Value.Required" xml:space="preserve"><value>Значение параметра обязательно</value></data>
+  <data name="ApplicantEvaluationValue.Value.Range" xml:space="preserve"><value>Значение должно быть натуральным числом</value></data>
+  <!-- ApplicantEvaluationValue controller -->
+  <data name="ApplicantEvaluationValue.CreateError" xml:space="preserve"><value>Ошибка. Не удалось добавить оценочный параметр для абитуриента</value></data>
+  <data name="ApplicantEvaluationValue.ValueOutOfRange" xml:space="preserve"><value>Значение {0} выходит за пределы допустимого диапазона [{1}, {2}] для параметра «{3}»</value></data>
+
+  <!-- Generic record messages -->
+  <data name="Record.NotFound" xml:space="preserve"><value>Запись с id {0} не найдена</value></data>
+  <data name="Record.UpdateError" xml:space="preserve"><value>Ошибка при обновлении записи</value></data>
+  <data name="Record.DeleteError" xml:space="preserve"><value>Ошибка при удалении записи</value></data>
+
+  <!-- User controller -->
+  <data name="User.UsernameExists" xml:space="preserve"><value>Пользователь с таким именем уже существует</value></data>
+  <data name="User.CannotDeleteSelf" xml:space="preserve"><value>Нельзя удалить собственный аккаунт</value></data>
+  <data name="User.CannotDeleteLastSuperAdmin" xml:space="preserve"><value>Нельзя удалить последнего суперадминистратора</value></data>
+
+  <!-- Result controller -->
+  <data name="Result.FacultyNotFound" xml:space="preserve"><value>Факультет с ID {0} не найден</value></data>
+  <data name="Result.NoSpecialties" xml:space="preserve"><value>Для указанного факультета не найдено специальностей</value></data>
+</root>
