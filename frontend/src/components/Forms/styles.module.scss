@@ -1,0 +1,68 @@
+.form {
+	margin-top: 20px;
+
+	.formRow {
+		display: flex;
+		justify-content: space-between;
+
+		margin-top: 10px;
+
+		.formColumn {
+			flex: 1;
+			padding: 0 10px;
+		}
+	}
+
+	.formGroupName {
+		text-align: center;
+		text-transform: uppercase;
+
+		font-size: 15px;
+		font-weight: lighter;
+	}
+}
+
+.steps {
+	margin-bottom: 30px;
+}
+
+.competitionData {
+	display: flex;
+	justify-content: space-between;
+
+	width: 100%;
+
+	.competitionOverviewTitle, .competitionListTitle {
+		margin: 10px 0;
+
+		font-size: 14px;
+		text-align: center;
+	}
+
+	.competitionList {
+		flex: 1 0 auto;
+	}
+
+	.competitionOverview {
+		display: flex;
+		flex-direction: column;
+
+		width: 500px;
+		margin-left: 10px;
+
+		.priorityList {
+			flex: 1 0 auto;
+		}
+	}
+}
+
+.rightAlignContainer {
+	display: flex;
+	justify-content: flex-end;
+
+	margin-top: 20px;
+}
+
+.inputNumberFullWidth {
+	width: 100%;
+}

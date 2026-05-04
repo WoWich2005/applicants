@@ -1,0 +1,46 @@
+.buttonWrapperRight {
+  display: flex;
+	justify-content: flex-end;
+
+	margin-bottom: 20px;
+}
+
+.buttonWrapperLeft {
+	@extend .buttonWrapperRight;
+
+	justify-content: flex-start;
+}
+
+.popover {
+max-width: 400px;
+}
+
+.helpButton {
+	font-size: 25px;
+}
+
+.collapseButtonWrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    width: 100%;
+
+    background-color: #fff;
+
+    .logo {
+        height: 48px;
+        margin-left: 16px;
+        object-fit: contain;
+    }
+
+    .collapseButton {
+        font-size: 18px;
+        width: 80px;
+        height: 80px;
+    }
+}
+
+:global([data-theme="dark"]) .collapseButtonWrapper {
+    background-color: #141414;
+}

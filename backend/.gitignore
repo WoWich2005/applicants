@@ -1,0 +1,13 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# .NET build output
+**/bin/
+**/obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo

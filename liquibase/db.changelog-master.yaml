@@ -1,0 +1,99 @@
+databaseChangeLog:
+  - changeSet:
+      id: "0001-init-schema"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0001_init_schema.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0002-add-evaluation-criteria"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0002_add_evaluation_criteria.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0003-add-evaluation-criteria-groups"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0003_add_evaluation_criteria_groups.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0004-add-departments"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0004_add_departments.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0005-specialty-link-to-department"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0005_specialty_link_to_department.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0006-add-competition-lists"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0006_add_competition_lists.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0007-add-applicant-categories-and-values"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0007_add_applicant_categories_and_values.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0008-drop-applicant-documents-and-specialties"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0008_drop_applicant_documents_and_specialties.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0009-add-selected-applicants"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0009_add_selected_applicants.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0010-add-users"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0010_add_users.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0011-rename-result-viewer-role"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0011_rename_result_viewer_role.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0012-add-type-to-evaluation-criteria"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0012_add_type_to_evaluation_criteria.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0013-add-applicant-notes"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0013_add_applicant_notes.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0014-add-externalid-to-applicants"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0014_add_externalid_to_applicants.sql
+            relativeToChangelogFile: true

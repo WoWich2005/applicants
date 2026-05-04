@@ -1,0 +1,177 @@
+import { Breadcrumb, List, Result, Skeleton, Tabs, Typography } from "antd"
+import Title from "../components/Title"
+import { useParams, useSearchParams, generatePath, Link } from "react-router"
+import { useEffect, useState } from "react"
+import useMessage from "antd/es/message/useMessage"
+import { specialtiesApi } from "../api/specialtiesApi"
+import { competitionListsApi } from "../api/competitionListsApi"
+import { admissionCategoriesApi } from "../api/admissionCategoriesApi"
+import SpecialtyForm from "../components/Forms/SpecialtyForm"
+import CompetitionListSimpleForm from "../components/Forms/CompetitionListSimpleForm"
+import CrudTable from "../components/CrudTable"
+import { ROUTES } from "../constants/routes"
+import { useAuth } from "../contexts/AuthContext"
+
+function SpecialtyEdit() {
+  const { auth } = useAuth()
+  const readOnly = auth?.role === 'DataViewer'
+  const [messageApi, contextHolder] = useMessage()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const { specialtyId } = useParams()
+
+  const [isLoading, setIsLoading] = useState(true)
+  const [responseStatus, setResponseStatus] = useState(null)
+  const [specialty, setSpecialty] = useState({ id: null, name: null, departmentId: null })
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
+        const [_, response] = await Promise.all([delayPromise, specialtiesApi.getById(specialtyId)])
+
+        setResponseStatus(response.status)
+        setSpecialty(response.data)
+      } catch (err) {
+        if (err.response === undefined) {
+          setResponseStatus(500)
+        } else {
+          setResponseStatus(err.response.status)
+        }
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [specialtyId])
+
+  if (isLoading) {
+    return <Skeleton paragraph={{ rows: 12 }} />
+  }
+
+  if (responseStatus === 404) {
+    return (
+      <Result
+        status="404"
+        title="404"
+        subTitle="Такой специальности не существует"
+      />
+    )
+  } else if (responseStatus === 500) {
+    return (
+      <Result
+        status="500"
+        title="500"
+        subTitle="Ошибка сервера"
+      />
+    )
+  }
+
+  const getDeleteBlockers = async (/** @type {any} */ competitionList) => {
+    const response = await admissionCategoriesApi.getAllByCompetitionList(competitionList.id)
+    return response.data.length > 0 ? response.data : null
+  }
+
+  const renderDeleteBlockersContent = (/** @type {any} */ competitionList, /** @type {any[]} */ categories) => {
+    const visible = categories.slice(0, 5)
+    const remaining = categories.length - 5
+    return (
+      <>
+        <Typography.Paragraph>
+          Невозможно удалить конкурсный список <strong>"{competitionList?.name}"</strong>, так как к нему привязаны категории приема.
+          Сначала удалите следующие категории приема:
+        </Typography.Paragraph>
+        <List
+          size="small"
+          dataSource={visible}
+          renderItem={(category) => <List.Item>{category.name}</List.Item>}
+          footer={remaining > 0 ? <Typography.Text type="secondary">и ещё {remaining} категорий приема</Typography.Text> : null}
+        />
+      </>
+    )
+  }
+
+  const onTabChange = (key) => {
+    searchParams.set("act", key)
+    setSearchParams(searchParams)
+  }
+
+  const tabs = [
+    {
+      key: "data",
+      label: "Данные специальности",
+      children: (
+        <SpecialtyForm
+          initialValues={specialty}
+          elementId={specialty?.id}
+          handleRequestResult={(updated) => setSpecialty(updated)}
+          readOnly={readOnly}
+        />
+      ),
+    },
+    {
+      key: "competition-lists",
+      label: "Конкурсные списки",
+      children: (
+        <CrudTable
+          elementForm={CompetitionListSimpleForm}
+          elementFormProps={{ specialtyId }}
+
+          editType="page"
+          renderEditUrl={(el) => generatePath(ROUTES.COMPETITION_LIST_EDIT, { listId: el.id })}
+
+          readOnly={readOnly}
+
+          serverSidePagination={true}
+          getPagedAsync={(params) => competitionListsApi.getPagedBySpecialtyId(specialtyId, params)}
+          deleteAsync={(id) => competitionListsApi.delete(id)}
+
+          getDeleteBlockers={getDeleteBlockers}
+          renderDeleteBlockersContent={renderDeleteBlockersContent}
+
+          addButtonTitle="Добавить конкурсный список"
+          renderEditTitle={(el) => `Редактирование конкурсного списка "${el?.name}"`}
+          renderDeleteText={(el) => `Удалить конкурсный список "${el?.name}"?`}
+
+          columns={[
+            {
+              title: "Название",
+              dataIndex: "name",
+              key: "name",
+              withSearch: true,
+              sorter: true
+            },
+            {
+              title: "План набора",
+              dataIndex: "plan",
+              key: "plan",
+              sorter: true
+            }
+          ]}
+        />
+      ),
+    },
+  ]
+
+  return (
+    <>
+      {contextHolder}
+      <Breadcrumb
+        style={{ marginBottom: 16 }}
+        items={[
+          { title: <Link to={ROUTES.SPECIALTIES}>Специальности</Link> },
+          { title: specialty.name },
+        ]}
+      />
+      <Title title={readOnly ? "Просмотр специальности" : "Редактирование специальности"} />
+
+      <Tabs
+        activeKey={searchParams.get("act") ?? "data"}
+        items={tabs}
+        onChange={onTabChange}
+      />
+    </>
+  )
+}
+
+export default SpecialtyEdit

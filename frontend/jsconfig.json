@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "moduleResolution": "node",
+    "jsx": "react-jsx"
+  },
+  "include": ["src/**/*.js", "src/**/*.jsx", "*.d.ts"],
+  "exclude": ["node_modules"]
+}
