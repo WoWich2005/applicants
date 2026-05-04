@@ -172,6 +172,7 @@
     "andMoreGroups": "and {{count}} more groups",
     "usedByApplicants": "The following applicants have values for this criterion:",
     "andMoreApplicants": "and {{count}} more applicants",
+    "rangeCheckText": "Cannot update range: the following applicants have values for this criterion outside the new range:",
     "form": {
       "nameLabel": "Criterion Name",
       "nameRequired": "Criterion name is required",

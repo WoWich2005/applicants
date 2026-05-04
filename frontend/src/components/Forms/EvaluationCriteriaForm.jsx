@@ -1,4 +1,4 @@
-import { Button, Form, Input, InputNumber, message, Select, Space } from "antd"
+import { Button, Form, Input, InputNumber, message, Select, Space, Typography } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { evaluationCriteriaApi } from "../../api/evaluationCriteriaApi"
@@ -9,13 +9,35 @@ function EvaluationCriteriaForm(props) {
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
+  const [rangeViolators, setRangeViolators] = useState(/** @type {{applicants: any[], total: number} | null} */ (null))
+  const [rangeErrorFields, setRangeErrorFields] = useState({ min: false, max: false })
 
   const api = evaluationCriteriaApi
+
+  const clearRangeErrors = () => {
+    setRangeViolators(null)
+    setRangeErrorFields({ min: false, max: false })
+  }
 
   const onFinish = async (formData) => {
     setIsLoading(true)
 
     try {
+      if (props.elementId) {
+        const minChanged = formData.minValue !== props.initialValues?.minValue
+        const maxChanged = formData.maxValue !== props.initialValues?.maxValue
+        if (minChanged || maxChanged) {
+          const rangeCheck = await api.getRangeCheck(props.elementId, formData.minValue, formData.maxValue)
+          const { applicants, applicantTotalCount } = rangeCheck.data
+          if (applicantTotalCount > 0) {
+            setRangeViolators({ applicants, total: applicantTotalCount })
+            setRangeErrorFields({ min: minChanged, max: maxChanged })
+            setIsLoading(false)
+            return
+          }
+        }
+      }
+
       const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
 
       if (props.elementId) {
@@ -48,6 +70,7 @@ function EvaluationCriteriaForm(props) {
 
   useEffect(() => {
     form.setFieldsValue(props.initialValues)
+    clearRangeErrors()
   }, [props.initialValues, form])
 
   return (
@@ -59,6 +82,11 @@ function EvaluationCriteriaForm(props) {
         layout="vertical"
         initialValues={props.initialValues}
         onFinish={onFinish}
+        onValuesChange={(changedValues) => {
+          if ('minValue' in changedValues || 'maxValue' in changedValues) {
+            clearRangeErrors()
+          }
+        }}
         autoComplete="off"
         disabled={!!props.readOnly}
       >
@@ -83,6 +111,7 @@ function EvaluationCriteriaForm(props) {
             <Form.Item
               label={t('evaluationCriteria.form.minValueLabel')}
               name="minValue"
+              validateStatus={rangeErrorFields.min ? "error" : undefined}
               rules={[
                 {
                   required: true,
@@ -97,6 +126,7 @@ function EvaluationCriteriaForm(props) {
             <Form.Item
               label={t('evaluationCriteria.form.maxValueLabel')}
               name="maxValue"
+              validateStatus={rangeErrorFields.max ? "error" : undefined}
               rules={[
                 {
                   required: true,
@@ -108,6 +138,23 @@ function EvaluationCriteriaForm(props) {
             </Form.Item>
           </div>
         </div>
+        {rangeViolators && (
+          <div style={{ padding: '0 10px', marginTop: -16, marginBottom: 12 }}>
+            <Typography.Text type="danger">{t('evaluationCriteria.rangeCheckText')}</Typography.Text>
+            <div style={{ paddingLeft: 8 }}>
+              {rangeViolators.applicants.map((a) => (
+                <div key={a.id}>
+                  <Typography.Text type="danger">• {a.name}</Typography.Text>
+                </div>
+              ))}
+              {rangeViolators.total > 5 && (
+                <Typography.Text type="secondary">
+                  {t('evaluationCriteria.andMoreApplicants', { count: rangeViolators.total - 5 })}
+                </Typography.Text>
+              )}
+            </div>
+          </div>
+        )}
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
             <Form.Item

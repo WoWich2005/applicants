@@ -275,6 +275,58 @@ namespace bntuapplicants_backend.Data.Repositories
             return result;
         }
 
+        public async Task<EvaluationCriteriaRangeCheckDto> GetRangeCheckAsync(int criteriaId, int minValue, int maxValue)
+        {
+            var result = new EvaluationCriteriaRangeCheckDto();
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            string countQuery = @"
+                SELECT COUNT(DISTINCT applicantid)
+                FROM applicantevaluationvalues
+                WHERE evaluationcriteriaid = @CriteriaId
+                  AND (value < @MinValue OR value > @MaxValue)
+            ";
+
+            using (var cmd = new NpgsqlCommand(countQuery, connection))
+            {
+                cmd.Parameters.AddWithValue("@CriteriaId", criteriaId);
+                cmd.Parameters.AddWithValue("@MinValue", minValue);
+                cmd.Parameters.AddWithValue("@MaxValue", maxValue);
+                result.ApplicantTotalCount = Convert.ToInt32(await cmd.ExecuteScalarAsync());
+            }
+
+            string applicantsQuery = @"
+                SELECT DISTINCT a.id, a.name, a.externalid
+                FROM applicants a
+                INNER JOIN applicantevaluationvalues aev ON aev.applicantid = a.id
+                WHERE aev.evaluationcriteriaid = @CriteriaId
+                  AND (aev.value < @MinValue OR aev.value > @MaxValue)
+                ORDER BY a.name
+                LIMIT 5
+            ";
+
+            using (var cmd = new NpgsqlCommand(applicantsQuery, connection))
+            {
+                cmd.Parameters.AddWithValue("@CriteriaId", criteriaId);
+                cmd.Parameters.AddWithValue("@MinValue", minValue);
+                cmd.Parameters.AddWithValue("@MaxValue", maxValue);
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    result.Applicants.Add(new Applicant
+                    {
+                        Id = reader.GetInt32(0),
+                        Name = reader.GetString(1),
+                        ExternalId = reader.GetString(2)
+                    });
+                }
+            }
+
+            return result;
+        }
+
         public async Task<bool> ExistsByNameAsync(string name, int? excludeId = null)
         {
             using var connection = new NpgsqlConnection(_connectionString);

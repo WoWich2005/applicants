@@ -52,6 +52,13 @@ namespace bntuapplicants_backend.Controllers
             return Ok(result);
         }
 
+        [HttpGet("{id}/range-check")]
+        public async Task<ActionResult<EvaluationCriteriaRangeCheckDto>> GetRangeCheck(int id, [FromQuery] int minValue, [FromQuery] int maxValue)
+        {
+            var result = await _repository.GetRangeCheckAsync(id, minValue, maxValue);
+            return Ok(result);
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<EvaluationCriteria>> GetById(int id)
         {

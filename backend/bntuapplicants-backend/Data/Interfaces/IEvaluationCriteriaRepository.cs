@@ -12,6 +12,7 @@ namespace bntuapplicants_backend.Data.Interfaces
         Task<bool> UpdateAsync(EvaluationCriteria evaluationCriteria);
         Task<bool> DeleteAsync(int id);
         Task<EvaluationCriteriaDeleteCheckDto> GetDeleteCheckAsync(int criteriaId);
+        Task<EvaluationCriteriaRangeCheckDto> GetRangeCheckAsync(int criteriaId, int minValue, int maxValue);
         Task<bool> ExistsByNameAsync(string name, int? excludeId = null);
     }
 }
