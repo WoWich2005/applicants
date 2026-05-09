@@ -10,7 +10,7 @@ export const instance = axios.create({
 
 instance.interceptors.request.use((config) => {
   try {
-    const stored = localStorage.getItem('bntu_auth')
+    const stored = localStorage.getItem('auth')
     const auth = stored ? JSON.parse(stored) : null
     if (auth?.token) {
       config.headers.Authorization = `Bearer ${auth.token}`
@@ -18,15 +18,15 @@ instance.interceptors.request.use((config) => {
   } catch {
     // ignore
   }
-  config.headers['Accept-Language'] = localStorage.getItem('bntu_language') ?? 'ru'
+  config.headers['Accept-Language'] = localStorage.getItem('language') ?? 'ru'
   return config
 })
 
 instance.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('bntu_auth')
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+      localStorage.removeItem('auth')
       window.location.href = '/login'
     }
     return Promise.reject(error)

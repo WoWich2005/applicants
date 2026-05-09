@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react'
 
 const ThemeContext = createContext({ isDark: false, toggleTheme: () => {} })
 
-const STORAGE_KEY = 'bntu_theme'
+const STORAGE_KEY = 'theme'
 
 export function ThemeProvider({ children }) {
   const [isDark, setIsDark] = useState(() => {
@@ -27,10 +27,16 @@ export function ThemeProvider({ children }) {
   }, [isDark])
 
   const toggleTheme = () => {
+    document.documentElement.classList.add('no-transitions')
     setIsDark(prev => {
       const next = !prev
       localStorage.setItem(STORAGE_KEY, next ? 'dark' : 'light')
       return next
+    })
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.documentElement.classList.remove('no-transitions')
+      })
     })
   }
 

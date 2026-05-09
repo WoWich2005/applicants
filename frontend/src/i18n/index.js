@@ -16,7 +16,7 @@ i18n
     defaultNS: 'translation',
     detection: {
       order: ['localStorage'],
-      lookupLocalStorage: 'bntu_language',
+      lookupLocalStorage: 'language',
       caches: ['localStorage'],
     },
     interpolation: {

@@ -14,7 +14,7 @@ const defaultContext = {
 
 const AuthContext = createContext(defaultContext)
 
-const STORAGE_KEY = 'bntu_auth'
+const STORAGE_KEY = 'auth'
 
 const isTokenExpired = (token) => {
   try {

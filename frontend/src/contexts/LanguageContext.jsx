@@ -3,7 +3,7 @@ import i18n from '../i18n/index.js'
 
 const LanguageContext = createContext({ language: 'ru', setLanguage: () => {} })
 
-const STORAGE_KEY = 'bntu_language'
+const STORAGE_KEY = 'language'
 
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState(
