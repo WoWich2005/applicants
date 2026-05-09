@@ -95,6 +95,13 @@ function Specialties() {
 
         columns={[
           {
+            title: t('common.colId'),
+            dataIndex: "id",
+            key: "id",
+            withSearch: true,
+            sorter: true,
+          },
+          {
             title: t('specialty.colName'),
             dataIndex: "name",
             key: "name",

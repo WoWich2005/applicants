@@ -81,6 +81,13 @@ function Departments() {
 
         columns={[
           {
+            title: t('common.colId'),
+            dataIndex: "id",
+            key: "id",
+            withSearch: true,
+            sorter: true,
+          },
+          {
             title: t('department.colName'),
             dataIndex: "name",
             key: "name",

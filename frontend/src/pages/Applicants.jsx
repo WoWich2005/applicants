@@ -39,6 +39,13 @@ function Applicants() {
         })}
         columns={[
           {
+            title: t('common.colId'),
+            dataIndex: "id",
+            key: "id",
+            withSearch: true,
+            sorter: true,
+          },
+          {
             title: t('applicant.colId'),
             dataIndex: "externalId",
             key: "externalId",

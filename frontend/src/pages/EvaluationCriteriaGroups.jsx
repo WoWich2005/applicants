@@ -67,6 +67,13 @@ function EvaluationCriteriaGroups() {
 
         columns={[
           {
+            title: t('common.colId'),
+            dataIndex: "id",
+            key: "id",
+            withSearch: true,
+            sorter: true,
+          },
+          {
             title: t('evaluationCriteriaGroup.colName'),
             dataIndex: "name",
             key: "name",

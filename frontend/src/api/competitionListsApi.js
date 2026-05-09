@@ -5,7 +5,7 @@ export const competitionListsApi = {
   getBySpecialtyId: (specialtyId) => instance.get(`/competition_lists/by-specialty/${specialtyId}`),
   getPagedBySpecialtyId: (specialtyId, { page, pageSize, filters, sortField, sortOrder }) =>
     instance.get(`/competition_lists/by-specialty/${specialtyId}/paged`, {
-      params: { page, pageSize, search: filters?.name?.[0], sortField, sortOrder }
+      params: { page, pageSize, search: filters?.name?.[0], idSearch: filters?.id?.[0], planSearch: filters?.plan?.[0], sortField, sortOrder }
     }),
   getById: (id) => instance.get(`/competition_lists/${id}`),
   create: (data) => instance.post("/competition_lists", data),

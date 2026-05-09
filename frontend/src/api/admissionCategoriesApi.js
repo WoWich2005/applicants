@@ -11,6 +11,7 @@ export const admissionCategoriesApi = {
         pageSize,
         search: filters?.name?.[0],
         groupId: filters?.evaluationCriteriaGroupId?.[0],
+        idSearch: filters?.id?.[0],
         sortField,
         sortOrder
       }

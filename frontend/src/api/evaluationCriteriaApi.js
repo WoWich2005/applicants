@@ -2,7 +2,7 @@ import { instance } from "."
 
 export const evaluationCriteriaApi = {
   getAll: () => instance.get(`/evaluation_criteria`),
-  getPaged: ({ page, pageSize, filters, sortField, sortOrder }) => instance.get(`/evaluation_criteria/paged`, { params: { page, pageSize, search: filters?.name?.[0], type: filters?.type?.[0], sortField, sortOrder } }),
+  getPaged: ({ page, pageSize, filters, sortField, sortOrder }) => instance.get(`/evaluation_criteria/paged`, { params: { page, pageSize, search: filters?.name?.[0], type: filters?.type?.[0], idSearch: filters?.id?.[0], sortField, sortOrder } }),
   getById: (id) => instance.get(`/evaluation_criteria/${id}`),
   getDeleteCheck: (id) => instance.get(`/evaluation_criteria/${id}/delete-check`),
   getRangeCheck: (id, minValue, maxValue) => instance.get(`/evaluation_criteria/${id}/range-check`, { params: { minValue, maxValue } }),
