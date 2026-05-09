@@ -44,7 +44,7 @@ Both Docker Compose setups require a `.env` file — copy `.env.example` to `.en
 
 - **Entry**: `main.jsx` → `AppRouter.jsx` handles all routes
 - **Providers**: `AuthContext` (JWT token, user role, faculty/specialty access) and `ThemeContext` (dark/light mode) wrap the app. Ant Design is configured in `GlobalProvider.jsx` with Russian locale (`ru_RU`) and primary color `#008a5e`.
-- **API layer**: `api/index.js` creates an Axios instance targeting `http://localhost:5059/api/v1`. Each API module (`applicantsApi.js`, `authApi.js`, etc.) is a thin wrapper around this instance. The Axios interceptor attaches the JWT token from localStorage (`bntu_auth`) to every request.
+- **API layer**: `api/index.js` creates an Axios instance targeting `http://localhost:5059/api/v1`. Each API module (`applicantsApi.js`, `authApi.js`, etc.) is a thin wrapper around this instance. The Axios interceptor attaches the JWT token from localStorage (`auth`) to every request.
 - **Auth storage**: Token payload includes `token`, `username`, `role`, `facultyId`, `specialtyIds`, and `facultyAccessIds`.
 - **Route protection**: `ProtectedRoute.jsx` checks the user's role against allowed roles defined in `constants/routes.js`.
 
@@ -57,7 +57,7 @@ Both Docker Compose setups require a `.env` file — copy `.env.example` to `.en
 
 ### Database (`/liquibase`)
 
-Schema is managed exclusively through Liquibase YAML changesets in `db.changelog-master.yaml`, with corresponding SQL files in `sql/`. There are 14+ migrations. Never modify the database schema directly — always add a new Liquibase changeset.
+Schema is managed exclusively through Liquibase YAML changesets in `db.changelog-master.yaml`, with corresponding SQL files in `sql/`. There are 19+ migrations. Never modify the database schema directly — always add a new Liquibase changeset.
 
 ### Data Flow
 
@@ -120,9 +120,57 @@ faculties → departments → specialties
 
   Оба списка передаются в JWT-токене (`facultyAccessIds`, `specialtyIds`) и используются фронтендом для фильтрации отображаемых данных.
 
+## Аудит, валидация и soft-delete
+
+### Журнал действий (`audit_log`)
+
+Таблица `audit_log` (миграции 0015, 0018) хранит все изменения системы. Сервис `AuditLogger` (`Services/AuditLogger.cs`) — единая точка записи; инжектируется во все репозитории.
+
+- Действия: `create`, `update`, `delete`, `validate`, `invalidate`, `delete_confirmed`, `delete_rejected`.
+- Страница `/audit-log` — журнал с фильтрами по дате, действию, типу сущности, пользователю. Доступна `SuperAdmin`, `FacultyManager`, `DataViewer`.
+- Журнал авторизации: таблица `auth_log` (миграция 0016), страница `/audit-log` (вкладка "Авторизация"), только `SuperAdmin`.
+
+### Валидация данных абитуриентов (`applicant_validation`)
+
+Таблица `applicant_validation` (миграция 0017): двойной контроль данных — оператор вносит, другой пользователь валидирует.
+
+- При любом изменении данных абитуриента `AuditLogger.ResetValidationIfNeededAsync` автоматически сбрасывает `validated = false`.
+- Страница `/audit` — 4 вкладки: валидация данных абитуриентов, некорректные заявки, некорректные группы оценочных параметров, некорректные конкурсные списки.
+- Доступно `SuperAdmin` и `FacultyManager`.
+
+### Soft-delete абитуриентов (`applicant_deletion_requests`)
+
+Таблица `applicant_deletion_requests` (миграция 0019): двухступенчатое удаление абитуриентов.
+
+- **Шаг 1:** Любой пользователь с правом удаления (`SuperAdmin`, `FacultyManager`, `AdmissionsOperator`) нажимает "Удалить" в `/applicants`. Вместо физического удаления создаётся запись `status='pending'`.
+- **Скрытие:** Абитуриент с `status` = `pending` или `confirmed` скрыт из всех обычных выборок (`ApplicantRepository` добавляет `NOT EXISTS` фильтр во все SELECT).
+- **Шаг 2 (на `/audit`, вкладка "Удаления на валидации"):** Только `SuperAdmin` видит таблицу pending-удалений и может:
+  - **Подтвердить** (`status='confirmed'`) — абитуриент остаётся скрыт навсегда. Лог: `delete_confirmed`.
+  - **Отклонить** (`status='rejected'`) — абитуриент возвращается в активные, `applicant_validation` сбрасывается. Лог: `delete_rejected`. После `rejected` можно снова создать запрос на удаление.
+- `SelectionService` **не обновлён** под soft-delete — TODO в рамках переписывания алгоритма.
+
+### `AuditController` (`/api/v1/audit`)
+
+| Метод | Путь | Роли | Описание |
+|-------|------|------|----------|
+| GET | `/audit/log` | SA, FM, DV | Журнал действий |
+| GET | `/audit/auth-log` | SA | Журнал авторизации |
+| GET | `/audit/validation/{id}` | SA, FM | Статус валидации |
+| POST | `/audit/validation/{id}` | SA, FM | Валидировать |
+| DELETE | `/audit/validation/{id}` | SA, FM | Отозвать валидацию |
+| GET | `/audit/unvalidated` | SA, FM | Список абитуриентов (с фильтром по статусу валидации) |
+| GET | `/audit/incomplete` | SA, FM | Абитуриенты с неполными данными |
+| GET | `/audit/invalid-criteria-groups` | SA, FM | Некорректные группы |
+| GET | `/audit/invalid-admission-categories` | SA, FM | Некорректные конкурсные списки |
+| GET | `/audit/pending-deletions` | SA | Запросы на удаление абитуриентов |
+| POST | `/audit/pending-deletions/{id}/confirm` | SA | Подтвердить удаление |
+| POST | `/audit/pending-deletions/{id}/reject` | SA | Отклонить удаление |
+
+SA = SuperAdmin, FM = FacultyManager, DV = DataViewer.
+
 ## Internationalization (i18n)
 
-The app supports Russian (default) and English. Language is stored in localStorage key `bntu_language`.
+The app supports Russian (default) and English. Language is stored in localStorage key `language`.
 
 ### Frontend
 
@@ -150,7 +198,7 @@ function MyComponent() {
 
 **Ant Design locale:** switched dynamically in `src/providers/GlobalProvider.jsx` via `useLanguage()` — `ruRU` / `enUS`.
 
-**Axios:** the request interceptor in `src/api/index.js` reads `localStorage.getItem('bntu_language')` directly (can't use React hooks in interceptors) and sends it as the `Accept-Language` header.
+**Axios:** the request interceptor in `src/api/index.js` reads `localStorage.getItem('language')` directly (can't use React hooks in interceptors) and sends it as the `Accept-Language` header.
 
 ### Backend
 
