@@ -8,7 +8,7 @@ namespace bntuapplicants_backend.Data.Interfaces
         Task<bool> AnyExistsAsync();
         Task<User?> GetByIdAsync(int id);
         Task<User?> GetByUsernameAsync(string username);
-        Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null);
+        Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null, string? idSearch = null);
         Task<UserResponseDto?> GetDetailedByIdAsync(int id);
         Task<User> CreateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds);
         Task<bool> UpdateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds);

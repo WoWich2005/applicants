@@ -7,7 +7,7 @@ namespace bntuapplicants_backend.Data.Interfaces
     {
         Task<EvaluationCriteriaGroup?> CreateAsync(EvaluationCriteriaGroup group);
         Task<List<EvaluationCriteriaGroup>> GetAllAsync();
-        Task<PagedResponse<EvaluationCriteriaGroup>> GetPagedAsync(int page, int pageSize, string? search, string? sortField = null, string? sortOrder = null);
+        Task<PagedResponse<EvaluationCriteriaGroup>> GetPagedAsync(int page, int pageSize, string? search, string? idSearch = null, string? sortField = null, string? sortOrder = null);
         Task<EvaluationCriteriaGroup?> GetByIdAsync(int id);
         Task<bool> UpdateAsync(EvaluationCriteriaGroup group);
         Task<bool> DeleteAsync(int id);

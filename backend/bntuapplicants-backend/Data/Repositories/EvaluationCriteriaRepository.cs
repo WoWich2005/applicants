@@ -1,19 +1,20 @@
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
+using bntuapplicants_backend.Services;
 using Npgsql;
-using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Data.Repositories
 {
-    
     public class EvaluationCriteriaRepository : IEvaluationCriteriaRepository
     {
         private readonly string _connectionString;
+        private readonly IAuditLogger _auditLogger;
 
-        public EvaluationCriteriaRepository(IConfiguration configuration)
+        public EvaluationCriteriaRepository(IConfiguration configuration, IAuditLogger auditLogger)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            _auditLogger = auditLogger;
         }
 
         private static CriteriaType ParseType(string value) => value switch
@@ -30,63 +31,80 @@ namespace bntuapplicants_backend.Data.Repositories
 
         public async Task<EvaluationCriteria?> CreateAsync(EvaluationCriteria evaluationCriteria)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            string query = @"
+                INSERT INTO evaluationcriteria (name, minvalue, maxvalue, type)
+                VALUES (@Name, @MinValue, @MaxValue, @Type::criteria_type)
+                RETURNING id, name, minvalue, maxvalue, type::text
+            ";
+
+            EvaluationCriteria? created = null;
+            using var tx = await connection.BeginTransactionAsync();
+
+            using (var command = new NpgsqlCommand(query, connection, (NpgsqlTransaction)tx))
             {
-                await connection.OpenAsync();
+                command.Parameters.AddWithValue("@Name", evaluationCriteria.Name);
+                command.Parameters.AddWithValue("@MinValue", evaluationCriteria.MinValue);
+                command.Parameters.AddWithValue("@MaxValue", evaluationCriteria.MaxValue);
+                command.Parameters.AddWithValue("@Type", FormatType(evaluationCriteria.Type));
 
-                string query = @"
-                    INSERT INTO evaluationcriteria (name, minvalue, maxvalue, type)
-                    VALUES (@Name, @MinValue, @MaxValue, @Type::criteria_type)
-                    RETURNING id, name, minvalue, maxvalue, type::text
-                ";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
                 {
-                    command.Parameters.AddWithValue("@Name", evaluationCriteria.Name);
-                    command.Parameters.AddWithValue("@MinValue", evaluationCriteria.MinValue);
-                    command.Parameters.AddWithValue("@MaxValue", evaluationCriteria.MaxValue);
-                    command.Parameters.AddWithValue("@Type", FormatType(evaluationCriteria.Type));
-
-                    using (var reader = await command.ExecuteReaderAsync())
+                    created = new EvaluationCriteria
                     {
-                        if (await reader.ReadAsync())
-                        {
-                            return new EvaluationCriteria
-                            {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                MinValue = reader.GetInt32(2),
-                                MaxValue = reader.GetInt32(3),
-                                Type = ParseType(reader.GetString(4))
-                            };
-                        }
-                    }
+                        Id = reader.GetInt32(0),
+                        Name = reader.GetString(1),
+                        MinValue = reader.GetInt32(2),
+                        MaxValue = reader.GetInt32(3),
+                        Type = ParseType(reader.GetString(4))
+                    };
                 }
             }
 
+            if (created != null)
+            {
+                await _auditLogger.LogCreateAsync("evaluation_criteria", created.Id.ToString(), created, tx: (NpgsqlTransaction)tx);
+                await tx.CommitAsync();
+                return created;
+            }
+
+            await tx.RollbackAsync();
             return null;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            var before = await GetByIdAsync(id);
+            if (before == null) return false;
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var tx = await connection.BeginTransactionAsync();
+
+            string query = "DELETE FROM evaluationcriteria WHERE id = @Id";
+
+            using (var command = new NpgsqlCommand(query, connection, (NpgsqlTransaction)tx))
             {
-                await connection.OpenAsync();
-
-                string query = "DELETE FROM evaluationcriteria WHERE id = @Id";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                command.Parameters.AddWithValue("@Id", id);
+                int affectedRows = await command.ExecuteNonQueryAsync();
+                if (affectedRows == 0)
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-
-                    int affectedRows = await command.ExecuteNonQueryAsync();
-                    return affectedRows > 0;
+                    await tx.RollbackAsync();
+                    return false;
                 }
             }
+
+            await _auditLogger.LogDeleteAsync("evaluation_criteria", id.ToString(), before, tx: (NpgsqlTransaction)tx);
+            await tx.CommitAsync();
+            return true;
         }
 
         private static readonly Dictionary<string, string> SortColumns = new()
         {
+            { "id", "id" },
             { "name", "name" },
             { "minValue", "minvalue" },
             { "maxValue", "maxvalue" }
@@ -99,17 +117,19 @@ namespace bntuapplicants_backend.Data.Repositories
             return $"ORDER BY {col} {dir}";
         }
 
-        public async Task<PagedResponse<EvaluationCriteria>> GetPagedAsync(int page, int pageSize, string? search, string? type = null, string? sortField = null, string? sortOrder = null)
+        public async Task<PagedResponse<EvaluationCriteria>> GetPagedAsync(int page, int pageSize, string? search, string? type = null, string? idSearch = null, string? sortField = null, string? sortOrder = null)
         {
             var items = new List<EvaluationCriteria>();
             int total = 0;
             int offset = (page - 1) * pageSize;
             bool hasSearch = !string.IsNullOrWhiteSpace(search);
             bool hasType = !string.IsNullOrWhiteSpace(type);
+            bool hasIdSearch = !string.IsNullOrWhiteSpace(idSearch) && int.TryParse(idSearch.Trim(), out _);
 
             var conditions = new List<string>();
             if (hasSearch) conditions.Add("LOWER(name) LIKE @SearchPattern");
             if (hasType) conditions.Add("type = @Type::criteria_type");
+            if (hasIdSearch) conditions.Add("CAST(id AS TEXT) LIKE @IdPattern");
             string whereClause = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : "";
 
             using var connection = new NpgsqlConnection(_connectionString);
@@ -119,6 +139,7 @@ namespace bntuapplicants_backend.Data.Repositories
             {
                 if (hasSearch) cmd.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
                 if (hasType) cmd.Parameters.AddWithValue("@Type", type!);
+                if (hasIdSearch) cmd.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
 
@@ -126,6 +147,7 @@ namespace bntuapplicants_backend.Data.Repositories
             {
                 if (hasSearch) command.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
                 if (hasType) command.Parameters.AddWithValue("@Type", type!);
+                if (hasIdSearch) command.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 command.Parameters.AddWithValue("@PageSize", pageSize);
                 command.Parameters.AddWithValue("@Offset", offset);
 
@@ -346,28 +368,46 @@ namespace bntuapplicants_backend.Data.Repositories
 
         public async Task<bool> UpdateAsync(EvaluationCriteria evaluationCriteria)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            var before = await GetByIdAsync(evaluationCriteria.Id);
+            if (before == null) return false;
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var tx = await connection.BeginTransactionAsync();
+
+            string query = @"
+                UPDATE evaluationcriteria
+                SET name = @Name, minvalue = @MinValue, maxvalue = @MaxValue, type = @Type::criteria_type
+                WHERE id = @Id
+            ";
+
+            using (var command = new NpgsqlCommand(query, connection, (NpgsqlTransaction)tx))
             {
-                await connection.OpenAsync();
+                command.Parameters.AddWithValue("@Name", evaluationCriteria.Name);
+                command.Parameters.AddWithValue("@MinValue", evaluationCriteria.MinValue);
+                command.Parameters.AddWithValue("@MaxValue", evaluationCriteria.MaxValue);
+                command.Parameters.AddWithValue("@Type", FormatType(evaluationCriteria.Type));
+                command.Parameters.AddWithValue("@Id", evaluationCriteria.Id);
 
-                string query = @"
-                    UPDATE evaluationcriteria
-                    SET name = @Name, minvalue = @MinValue, maxvalue = @MaxValue, type = @Type::criteria_type
-                    WHERE id = @Id
-                ";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                int affectedRows = await command.ExecuteNonQueryAsync();
+                if (affectedRows == 0)
                 {
-                    command.Parameters.AddWithValue("@Name", evaluationCriteria.Name);
-                    command.Parameters.AddWithValue("@MinValue", evaluationCriteria.MinValue);
-                    command.Parameters.AddWithValue("@MaxValue", evaluationCriteria.MaxValue);
-                    command.Parameters.AddWithValue("@Type", FormatType(evaluationCriteria.Type));
-                    command.Parameters.AddWithValue("@Id", evaluationCriteria.Id);
-
-                    int affectedRows = await command.ExecuteNonQueryAsync();
-                    return affectedRows > 0;
+                    await tx.RollbackAsync();
+                    return false;
                 }
             }
+
+            var diff = JsonDiff.Compute(before, new
+            {
+                evaluationCriteria.Id,
+                evaluationCriteria.Name,
+                evaluationCriteria.MinValue,
+                evaluationCriteria.MaxValue,
+                Type = FormatType(evaluationCriteria.Type)
+            });
+            await _auditLogger.LogUpdateAsync("evaluation_criteria", evaluationCriteria.Id.ToString(), diff, tx: (NpgsqlTransaction)tx);
+            await tx.CommitAsync();
+            return true;
         }
     }
 }

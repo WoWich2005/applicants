@@ -68,6 +68,7 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] string? search = null,
             [FromQuery] int? facultyId = null,
             [FromQuery] int? departmentId = null,
+            [FromQuery] string? idSearch = null,
             [FromQuery] string? sortField = null,
             [FromQuery] string? sortOrder = null)
         {
@@ -80,14 +81,14 @@ namespace bntuapplicants_backend.Controllers
             {
                 if (managerFacultyId.HasValue && !await DepartmentBelongsToFacultyAsync(departmentId.Value, managerFacultyId.Value))
                     return Forbid();
-                return Ok(await _repository.GetPagedByDepartmentIdAsync(departmentId.Value, page, pageSize, search, sortField, sortOrder));
+                return Ok(await _repository.GetPagedByDepartmentIdAsync(departmentId.Value, page, pageSize, search, idSearch, sortField, sortOrder));
             }
 
             var effectiveFacultyId = managerFacultyId ?? facultyId;
             if (effectiveFacultyId.HasValue)
-                return Ok(await _repository.GetPagedByFacultyIdAsync(effectiveFacultyId.Value, page, pageSize, search, sortField, sortOrder));
+                return Ok(await _repository.GetPagedByFacultyIdAsync(effectiveFacultyId.Value, page, pageSize, search, idSearch, sortField, sortOrder));
 
-            return Ok(await _repository.GetPagedAsync(page, pageSize, search, sortField, sortOrder));
+            return Ok(await _repository.GetPagedAsync(page, pageSize, search, idSearch, sortField, sortOrder));
         }
 
         [HttpGet("by-department/{departmentId}")]

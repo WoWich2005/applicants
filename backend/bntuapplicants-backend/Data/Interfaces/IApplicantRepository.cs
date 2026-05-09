@@ -7,8 +7,9 @@ namespace bntuapplicants_backend.Data.Interfaces
     {
         Task<Applicant?> CreateAsync(Applicant applicant);
         Task<List<Applicant>> GetAllAsync();
-        Task<PagedResponse<Applicant>> GetPagedAsync(int page, int pageSize, string? search, string? externalIdSearch = null, string? sortField = null, string? sortOrder = null);
+        Task<PagedResponse<Applicant>> GetPagedAsync(int page, int pageSize, string? search, string? externalIdSearch = null, string? idSearch = null, string? sortField = null, string? sortOrder = null);
         Task<Applicant?> GetByIdAsync(int id);
+        Task<(Applicant? Applicant, bool IsDeleted)> FindByExternalIdAsync(string externalId);
         Task<bool> UpdateAsync(Applicant applicant);
         Task<bool> DeleteAsync(int id);
     }

@@ -30,11 +30,12 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null,
             [FromQuery] string? role = null,
-            [FromQuery] bool? isActive = null)
+            [FromQuery] bool? isActive = null,
+            [FromQuery] string? idSearch = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
-            var (items, total) = await _repo.GetPagedAsync(page, pageSize, search, role, isActive);
+            var (items, total) = await _repo.GetPagedAsync(page, pageSize, search, role, isActive, idSearch);
             return Ok(new { items, total });
         }
 

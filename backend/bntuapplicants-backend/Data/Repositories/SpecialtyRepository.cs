@@ -1,76 +1,94 @@
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
+using bntuapplicants_backend.Services;
 using Npgsql;
-using System.Diagnostics.CodeAnalysis;
 
 namespace bntuapplicants_backend.Data.Repositories
 {
-    
     public class SpecialtyRepository : ISpecialtyRepository
     {
         private readonly string _connectionString;
+        private readonly IAuditLogger _auditLogger;
 
-        public SpecialtyRepository(IConfiguration configuration)
+        public SpecialtyRepository(IConfiguration configuration, IAuditLogger auditLogger)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            _auditLogger = auditLogger;
         }
 
         public async Task<Specialty?> CreateAsync(Specialty specialty)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            string query = @"
+                INSERT INTO Specialties (Name, DepartmentId)
+                VALUES (@Name, @DepartmentId)
+                RETURNING *
+            ";
+
+            Specialty? created = null;
+            using var tx = await connection.BeginTransactionAsync();
+
+            using (var command = new NpgsqlCommand(query, connection, (NpgsqlTransaction)tx))
             {
-                await connection.OpenAsync();
+                command.Parameters.AddWithValue("@Name", specialty.Name);
+                command.Parameters.AddWithValue("@DepartmentId", specialty.DepartmentId);
 
-                string query = @"
-                    INSERT INTO Specialties (Name, DepartmentId)
-                    VALUES (@Name, @DepartmentId)
-                    RETURNING *
-                ";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                using var reader = await command.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
                 {
-                    command.Parameters.AddWithValue("@Name", specialty.Name);
-                    command.Parameters.AddWithValue("@DepartmentId", specialty.DepartmentId);
-
-                    using (var reader = await command.ExecuteReaderAsync())
+                    created = new Specialty
                     {
-                        if (await reader.ReadAsync())
-                        {
-                            return new Specialty
-                            {
-                                Id = reader.GetInt32(0),
-                                Name = reader.GetString(1),
-                                DepartmentId = reader.GetInt32(2)
-                            };
-                        }
-                    }
+                        Id = reader.GetInt32(0),
+                        Name = reader.GetString(1),
+                        DepartmentId = reader.GetInt32(2)
+                    };
                 }
             }
 
+            if (created != null)
+            {
+                await _auditLogger.LogCreateAsync("specialty", created.Id.ToString(), created, tx: (NpgsqlTransaction)tx);
+                await tx.CommitAsync();
+                return created;
+            }
+
+            await tx.RollbackAsync();
             return null;
         }
 
         public async Task<bool> DeleteAsync(int id)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            var before = await GetByIdAsync(id);
+            if (before == null) return false;
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var tx = await connection.BeginTransactionAsync();
+
+            string query = "DELETE FROM Specialties WHERE Id = @Id";
+
+            using (var command = new NpgsqlCommand(query, connection, (NpgsqlTransaction)tx))
             {
-                await connection.OpenAsync();
-
-                string query = "DELETE FROM Specialties WHERE Id = @Id";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                command.Parameters.AddWithValue("@Id", id);
+                int affectedRows = await command.ExecuteNonQueryAsync();
+                if (affectedRows == 0)
                 {
-                    command.Parameters.AddWithValue("@Id", id);
-
-                    int affectedRows = await command.ExecuteNonQueryAsync();
-                    return affectedRows > 0;
+                    await tx.RollbackAsync();
+                    return false;
                 }
             }
+
+            await _auditLogger.LogDeleteAsync("specialty", id.ToString(), before, tx: (NpgsqlTransaction)tx);
+            await tx.CommitAsync();
+            return true;
         }
 
         private static readonly Dictionary<string, string> SortColumns = new()
         {
+            { "id", "s.id" },
             { "name", "s.name" },
             { "departmentId", "d.name" },
             { "facultyId", "f.name" }
@@ -83,22 +101,30 @@ namespace bntuapplicants_backend.Data.Repositories
             return $"ORDER BY {col} {dir}";
         }
 
-        public async Task<PagedResponse<Specialty>> GetPagedAsync(int page, int pageSize, string? search, string? sortField = null, string? sortOrder = null)
+        public async Task<PagedResponse<Specialty>> GetPagedAsync(int page, int pageSize, string? search, string? idSearch = null, string? sortField = null, string? sortOrder = null)
         {
             var items = new List<Specialty>();
             int total = 0;
             int offset = (page - 1) * pageSize;
             bool hasSearch = !string.IsNullOrWhiteSpace(search);
-            string whereClause = hasSearch ? "WHERE LOWER(Name) LIKE @SearchPattern" : "";
-            string whereClauseAliased = hasSearch ? "WHERE LOWER(s.name) LIKE @SearchPattern" : "";
+            bool hasIdSearch = !string.IsNullOrWhiteSpace(idSearch) && int.TryParse(idSearch.Trim(), out _);
+
+            var conditions = new List<string>();
+            if (hasSearch) conditions.Add("LOWER(Name) LIKE @SearchPattern");
+            if (hasIdSearch) conditions.Add("CAST(Id AS TEXT) LIKE @IdPattern");
+            var conditionsAliased = new List<string>();
+            if (hasSearch) conditionsAliased.Add("LOWER(s.name) LIKE @SearchPattern");
+            if (hasIdSearch) conditionsAliased.Add("CAST(s.id AS TEXT) LIKE @IdPattern");
+            string whereClause = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : "";
+            string whereClauseAliased = conditionsAliased.Count > 0 ? "WHERE " + string.Join(" AND ", conditionsAliased) : "";
 
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
             using (var cmd = new NpgsqlCommand($"SELECT COUNT(*) FROM Specialties {whereClause}", connection))
             {
-                if (hasSearch)
-                    cmd.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasSearch) cmd.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasIdSearch) cmd.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
 
@@ -113,8 +139,8 @@ namespace bntuapplicants_backend.Data.Repositories
             ";
             using (var command = new NpgsqlCommand(dataQuery, connection))
             {
-                if (hasSearch)
-                    command.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasSearch) command.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasIdSearch) command.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 command.Parameters.AddWithValue("@PageSize", pageSize);
                 command.Parameters.AddWithValue("@Offset", offset);
 
@@ -206,27 +232,38 @@ namespace bntuapplicants_backend.Data.Repositories
 
         public async Task<bool> UpdateAsync(Specialty specialty)
         {
-            using (var connection = new NpgsqlConnection(_connectionString))
+            var before = await GetByIdAsync(specialty.Id);
+            if (before == null) return false;
+
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+            using var tx = await connection.BeginTransactionAsync();
+
+            string query = @"
+                UPDATE Specialties
+                SET Name = @Name,
+                    DepartmentId = @DepartmentId
+                WHERE Id = @Id
+            ";
+
+            using (var command = new NpgsqlCommand(query, connection, (NpgsqlTransaction)tx))
             {
-                await connection.OpenAsync();
+                command.Parameters.AddWithValue("@Name", specialty.Name);
+                command.Parameters.AddWithValue("@DepartmentId", specialty.DepartmentId);
+                command.Parameters.AddWithValue("@Id", specialty.Id);
 
-                string query = @"
-                    UPDATE Specialties
-                    SET Name = @Name,
-                        DepartmentId = @DepartmentId
-                    WHERE Id = @Id
-                ";
-
-                using (var command = new NpgsqlCommand(query, connection))
+                int affectedRows = await command.ExecuteNonQueryAsync();
+                if (affectedRows == 0)
                 {
-                    command.Parameters.AddWithValue("@Name", specialty.Name);
-                    command.Parameters.AddWithValue("@DepartmentId", specialty.DepartmentId);
-                    command.Parameters.AddWithValue("@Id", specialty.Id);
-
-                    int affectedRows = await command.ExecuteNonQueryAsync();
-                    return affectedRows > 0;
+                    await tx.RollbackAsync();
+                    return false;
                 }
             }
+
+            var diff = JsonDiff.Compute(before, new { specialty.Id, specialty.Name, specialty.DepartmentId });
+            await _auditLogger.LogUpdateAsync("specialty", specialty.Id.ToString(), diff, tx: (NpgsqlTransaction)tx);
+            await tx.CommitAsync();
+            return true;
         }
 
         public async Task<Dictionary<int, Specialty>> GetSpecialtiesDictionaryAsync()
@@ -261,13 +298,15 @@ namespace bntuapplicants_backend.Data.Repositories
             return records;
         }
 
-        public async Task<PagedResponse<Specialty>> GetPagedByFacultyIdAsync(int facultyId, int page, int pageSize, string? search, string? sortField = null, string? sortOrder = null)
+        public async Task<PagedResponse<Specialty>> GetPagedByFacultyIdAsync(int facultyId, int page, int pageSize, string? search, string? idSearch = null, string? sortField = null, string? sortOrder = null)
         {
             var items = new List<Specialty>();
             int total = 0;
             int offset = (page - 1) * pageSize;
             bool hasSearch = !string.IsNullOrWhiteSpace(search);
+            bool hasIdSearch = !string.IsNullOrWhiteSpace(idSearch) && int.TryParse(idSearch.Trim(), out _);
             string searchClause = hasSearch ? "AND LOWER(s.name) LIKE @SearchPattern" : "";
+            string idClause = hasIdSearch ? "AND CAST(s.id AS TEXT) LIKE @IdPattern" : "";
 
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -275,10 +314,11 @@ namespace bntuapplicants_backend.Data.Repositories
             using (var cmd = new NpgsqlCommand($@"
                 SELECT COUNT(*) FROM specialties s
                 JOIN departments d ON s.departmentid = d.id
-                WHERE d.facultyid = @FacultyId {searchClause}", connection))
+                WHERE d.facultyid = @FacultyId {searchClause} {idClause}", connection))
             {
                 cmd.Parameters.AddWithValue("@FacultyId", facultyId);
                 if (hasSearch) cmd.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasIdSearch) cmd.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
 
@@ -287,7 +327,7 @@ namespace bntuapplicants_backend.Data.Repositories
                 FROM specialties s
                 JOIN departments d ON d.id = s.departmentid
                 LEFT JOIN faculties f ON f.id = d.facultyid
-                WHERE d.facultyid = @FacultyId {searchClause}
+                WHERE d.facultyid = @FacultyId {searchClause} {idClause}
                 {OrderBy(sortField, sortOrder)}
                 LIMIT @PageSize OFFSET @Offset";
 
@@ -295,6 +335,7 @@ namespace bntuapplicants_backend.Data.Repositories
             {
                 command.Parameters.AddWithValue("@FacultyId", facultyId);
                 if (hasSearch) command.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasIdSearch) command.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 command.Parameters.AddWithValue("@PageSize", pageSize);
                 command.Parameters.AddWithValue("@Offset", offset);
 
@@ -306,21 +347,24 @@ namespace bntuapplicants_backend.Data.Repositories
             return new PagedResponse<Specialty> { Items = items, Total = total };
         }
 
-        public async Task<PagedResponse<Specialty>> GetPagedByDepartmentIdAsync(int departmentId, int page, int pageSize, string? search, string? sortField = null, string? sortOrder = null)
+        public async Task<PagedResponse<Specialty>> GetPagedByDepartmentIdAsync(int departmentId, int page, int pageSize, string? search, string? idSearch = null, string? sortField = null, string? sortOrder = null)
         {
             var items = new List<Specialty>();
             int total = 0;
             int offset = (page - 1) * pageSize;
             bool hasSearch = !string.IsNullOrWhiteSpace(search);
+            bool hasIdSearch = !string.IsNullOrWhiteSpace(idSearch) && int.TryParse(idSearch.Trim(), out _);
             string searchClause = hasSearch ? "AND LOWER(s.name) LIKE @SearchPattern" : "";
+            string idClause = hasIdSearch ? "AND CAST(s.id AS TEXT) LIKE @IdPattern" : "";
 
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            using (var cmd = new NpgsqlCommand($"SELECT COUNT(*) FROM specialties s WHERE s.departmentid = @DepartmentId {searchClause}", connection))
+            using (var cmd = new NpgsqlCommand($"SELECT COUNT(*) FROM specialties s WHERE s.departmentid = @DepartmentId {searchClause} {idClause}", connection))
             {
                 cmd.Parameters.AddWithValue("@DepartmentId", departmentId);
                 if (hasSearch) cmd.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasIdSearch) cmd.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
 
@@ -329,7 +373,7 @@ namespace bntuapplicants_backend.Data.Repositories
                 FROM specialties s
                 LEFT JOIN departments d ON d.id = s.departmentid
                 LEFT JOIN faculties f ON f.id = d.facultyid
-                WHERE s.departmentid = @DepartmentId {searchClause}
+                WHERE s.departmentid = @DepartmentId {searchClause} {idClause}
                 {OrderBy(sortField, sortOrder)}
                 LIMIT @PageSize OFFSET @Offset";
 
@@ -337,6 +381,7 @@ namespace bntuapplicants_backend.Data.Repositories
             {
                 command.Parameters.AddWithValue("@DepartmentId", departmentId);
                 if (hasSearch) command.Parameters.AddWithValue("@SearchPattern", $"%{search!.ToLower()}%");
+                if (hasIdSearch) command.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 command.Parameters.AddWithValue("@PageSize", pageSize);
                 command.Parameters.AddWithValue("@Offset", offset);
 

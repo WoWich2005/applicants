@@ -1,6 +1,7 @@
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
+using bntuapplicants_backend.Services;
 using Npgsql;
 
 namespace bntuapplicants_backend.Data.Repositories
@@ -8,10 +9,12 @@ namespace bntuapplicants_backend.Data.Repositories
     public class UserRepository : IUserRepository
     {
         private readonly string _connectionString;
+        private readonly IAuditLogger _auditLogger;
 
-        public UserRepository(IConfiguration configuration)
+        public UserRepository(IConfiguration configuration, IAuditLogger auditLogger)
         {
             _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            _auditLogger = auditLogger;
         }
 
         public async Task<bool> AnyExistsAsync()
@@ -50,17 +53,19 @@ namespace bntuapplicants_backend.Data.Repositories
             return null;
         }
 
-        public async Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null)
+        public async Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null, string? idSearch = null)
         {
             var items = new List<UserResponseDto>();
             int total = 0;
             int offset = (page - 1) * pageSize;
             bool hasSearch = !string.IsNullOrWhiteSpace(search);
+            bool hasIdSearch = !string.IsNullOrWhiteSpace(idSearch) && int.TryParse(idSearch.Trim(), out _);
 
             var conditions = new List<string>();
             if (hasSearch) conditions.Add("LOWER(u.username) LIKE @Search");
             if (role != null) conditions.Add("u.role = @Role");
             if (isActive.HasValue) conditions.Add("u.is_active = @IsActive");
+            if (hasIdSearch) conditions.Add("CAST(u.id AS TEXT) LIKE @IdPattern");
             string whereClause = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : "";
 
             using var connection = new NpgsqlConnection(_connectionString);
@@ -71,6 +76,7 @@ namespace bntuapplicants_backend.Data.Repositories
                 if (hasSearch) cmd.Parameters.AddWithValue("@Search", $"%{search!.ToLower()}%");
                 if (role != null) cmd.Parameters.AddWithValue("@Role", role);
                 if (isActive.HasValue) cmd.Parameters.AddWithValue("@IsActive", isActive.Value);
+                if (hasIdSearch) cmd.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
 
@@ -88,6 +94,7 @@ namespace bntuapplicants_backend.Data.Repositories
                 if (hasSearch) cmd.Parameters.AddWithValue("@Search", $"%{search!.ToLower()}%");
                 if (role != null) cmd.Parameters.AddWithValue("@Role", role);
                 if (isActive.HasValue) cmd.Parameters.AddWithValue("@IsActive", isActive.Value);
+                if (hasIdSearch) cmd.Parameters.AddWithValue("@IdPattern", $"%{idSearch!.Trim()}%");
                 cmd.Parameters.AddWithValue("@PageSize", pageSize);
                 cmd.Parameters.AddWithValue("@Offset", offset);
 
@@ -176,13 +183,29 @@ namespace bntuapplicants_backend.Data.Repositories
             await SetSpecialtyAccessAsync(newId, specialtyIds, connection, transaction);
             await SetFacultyAccessAsync(newId, facultyAccessIds, connection, transaction);
 
-            await transaction.CommitAsync();
             user.Id = newId;
+
+            var created = new
+            {
+                user.Id,
+                user.Username,
+                user.Role,
+                user.FacultyId,
+                user.IsActive,
+                user.MustChangePassword,
+                SpecialtyIds = specialtyIds,
+                FacultyAccessIds = facultyAccessIds
+            };
+            await _auditLogger.LogCreateAsync("user", newId.ToString(), created, tx: transaction);
+
+            await transaction.CommitAsync();
             return user;
         }
 
         public async Task<bool> UpdateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds)
         {
+            var before = await GetByIdAsync(user.Id);
+
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
             using var transaction = await connection.BeginTransactionAsync();
@@ -210,6 +233,30 @@ namespace bntuapplicants_backend.Data.Repositories
             await SetSpecialtyAccessAsync(user.Id, specialtyIds, connection, transaction);
             await SetFacultyAccessAsync(user.Id, facultyAccessIds, connection, transaction);
 
+            if (rows > 0)
+            {
+                var afterSnapshot = new
+                {
+                    user.Id,
+                    user.Username,
+                    user.Role,
+                    user.FacultyId,
+                    SpecialtyIds = specialtyIds,
+                    FacultyAccessIds = facultyAccessIds
+                };
+                var beforeSnapshot = before == null ? (object)new { } : new
+                {
+                    before.Id,
+                    before.Username,
+                    before.Role,
+                    before.FacultyId,
+                    SpecialtyIds = new List<int>(),
+                    FacultyAccessIds = new List<int>()
+                };
+                var diff = JsonDiff.Compute(beforeSnapshot, afterSnapshot);
+                await _auditLogger.LogUpdateAsync("user", user.Id.ToString(), diff, tx: transaction);
+            }
+
             await transaction.CommitAsync();
             return rows > 0;
         }
@@ -225,11 +272,27 @@ namespace bntuapplicants_backend.Data.Repositories
 
         public async Task<bool> DeleteAsync(int id)
         {
+            var before = await GetByIdAsync(id);
+            if (before == null) return false;
+
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
-            using var cmd = new NpgsqlCommand("DELETE FROM users WHERE id = @Id", connection);
-            cmd.Parameters.AddWithValue("@Id", id);
-            return await cmd.ExecuteNonQueryAsync() > 0;
+            using var tx = await connection.BeginTransactionAsync();
+
+            using (var cmd = new NpgsqlCommand("DELETE FROM users WHERE id = @Id", connection, tx))
+            {
+                cmd.Parameters.AddWithValue("@Id", id);
+                int affected = await cmd.ExecuteNonQueryAsync();
+                if (affected == 0)
+                {
+                    await tx.RollbackAsync();
+                    return false;
+                }
+            }
+
+            await _auditLogger.LogDeleteAsync("user", id.ToString(), before, tx: tx);
+            await tx.CommitAsync();
+            return true;
         }
 
         public async Task<int> CountByRoleAsync(string role)

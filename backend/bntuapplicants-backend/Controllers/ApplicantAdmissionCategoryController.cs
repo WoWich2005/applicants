@@ -1,6 +1,7 @@
 using bntuapplicants_backend.Constants;
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Requests;
+using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -62,10 +63,20 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<ApplicantAdmissionCategory>>> GetAllByApplicant([FromQuery] int applicantId)
+        public async Task<ActionResult<PagedResponse<ApplicantAdmissionCategoryDto>>> GetAllByApplicant(
+            [FromQuery] int applicantId,
+            [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+            [FromQuery] string? sortField = null, [FromQuery] string? sortOrder = null,
+            [FromQuery] string? id = null, [FromQuery] string? selectionPriority = null, [FromQuery] string? faculty = null, [FromQuery] string? department = null,
+            [FromQuery] string? specialty = null, [FromQuery] string? competitionList = null,
+            [FromQuery] string? category = null)
         {
-            var records = await _repository.GetAllByApplicantAsync(applicantId);
-            return Ok(records);
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 20;
+            var result = await _repository.GetAllByApplicantPagedAsync(
+                applicantId, page, pageSize, sortField, sortOrder,
+                id, selectionPriority, faculty, department, specialty, competitionList, category);
+            return Ok(result);
         }
 
         [HttpGet("by-category/{admissionCategoryId}")]
@@ -95,6 +106,9 @@ namespace bntuapplicants_backend.Controllers
         {
             if (!await HasSpecialtyAccessAsync(dto.AdmissionCategoryId))
                 return Forbid();
+
+            if (await _repository.ExistsAsync(dto.ApplicantId, dto.AdmissionCategoryId))
+                return BadRequest(new { message = (string)_localizer["ApplicantAdmissionCategory.AlreadyExists"] });
 
             var createdRecord = await _repository.CreateAsync(new ApplicantAdmissionCategory
             {
@@ -129,6 +143,9 @@ namespace bntuapplicants_backend.Controllers
 
             if (!await HasSpecialtyAccessAsync(dto.AdmissionCategoryId))
                 return Forbid();
+
+            if (await _repository.ExistsAsync(dto.ApplicantId, dto.AdmissionCategoryId, id))
+                return BadRequest(new { message = (string)_localizer["ApplicantAdmissionCategory.AlreadyExists"] });
 
             bool success = await _repository.UpdateAsync(new ApplicantAdmissionCategory
             {

@@ -1,5 +1,6 @@
 using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Requests;
+using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -33,6 +34,18 @@ namespace bntuapplicants_backend.Controllers
             return Ok(records);
         }
 
+        [HttpGet("paged")]
+        public async Task<ActionResult<PagedResponse<EvaluationCriteriaGroupItemDto>>> GetPagedByGroup(
+            [FromQuery] int groupId,
+            [FromQuery] int page = 1, [FromQuery] int pageSize = 20,
+            [FromQuery] string? sortField = null, [FromQuery] string? sortOrder = null,
+            [FromQuery] string? id = null, [FromQuery] string? priority = null, [FromQuery] string? criteria = null)
+        {
+            if (page < 1) page = 1;
+            if (pageSize < 1 || pageSize > 100) pageSize = 20;
+            return Ok(await _repository.GetAllByGroupPagedAsync(groupId, page, pageSize, sortField, sortOrder, id, priority, criteria));
+        }
+
         [HttpGet("{id}")]
         public async Task<ActionResult<EvaluationCriteriaGroupItem>> GetById(int id)
         {
@@ -53,6 +66,9 @@ namespace bntuapplicants_backend.Controllers
             var group = await _groupRepository.GetByIdAsync(dto.GroupId);
             if (group == null)
                 return NotFound(new { message = (string)_localizer["EvaluationCriteriaGroup.NotFound", dto.GroupId] });
+
+            if (await _repository.ExistsInGroupAsync(dto.GroupId, dto.CriteriaId))
+                return Conflict(new { message = (string)_localizer["EvaluationCriteriaGroupItem.CriteriaExists"] });
 
             var createdRecord = await _repository.CreateAsync(new EvaluationCriteriaGroupItem
             {
@@ -80,6 +96,9 @@ namespace bntuapplicants_backend.Controllers
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
                 return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
+
+            if (await _repository.ExistsInGroupAsync(dto.GroupId, dto.CriteriaId, excludeId: id))
+                return Conflict(new { message = (string)_localizer["EvaluationCriteriaGroupItem.CriteriaExists"] });
 
             bool success = await _repository.UpdateAsync(new EvaluationCriteriaGroupItem
             {

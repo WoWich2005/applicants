@@ -8,7 +8,7 @@ namespace bntuapplicants_backend.Data.Interfaces
         Task<AdmissionCategory?> CreateAsync(AdmissionCategory category);
         Task<List<AdmissionCategory>> GetAllAsync();
         Task<List<AdmissionCategory>> GetAllByCompetitionListAsync(int competitionListId);
-        Task<PagedResponse<AdmissionCategory>> GetPagedByCompetitionListAsync(int competitionListId, int page, int pageSize, string? search, int? groupId, string? sortField, string? sortOrder);
+        Task<PagedResponse<AdmissionCategory>> GetPagedByCompetitionListAsync(int competitionListId, int page, int pageSize, string? search, int? groupId, string? idSearch, string? sortField, string? sortOrder);
         Task<List<AdmissionCategory>> GetAllBySpecialtyIdAsync(int specialtyId);
         Task<AdmissionCategory?> GetByIdAsync(int id);
         Task<bool> UpdateAsync(AdmissionCategory category);

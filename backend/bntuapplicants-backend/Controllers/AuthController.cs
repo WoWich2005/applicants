@@ -15,14 +15,19 @@ namespace bntuapplicants_backend.Controllers
     {
         private readonly IUserRepository _userRepo;
         private readonly JwtService _jwtService;
+        private readonly IAuthLogger _authLogger;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public AuthController(IUserRepository userRepo, JwtService jwtService, IStringLocalizer<SharedResources> localizer)
+        public AuthController(IUserRepository userRepo, JwtService jwtService, IAuthLogger authLogger, IStringLocalizer<SharedResources> localizer)
         {
             _userRepo = userRepo;
             _jwtService = jwtService;
+            _authLogger = authLogger;
             _localizer = localizer;
         }
+
+        private string? GetIp() => HttpContext.Connection.RemoteIpAddress?.ToString();
+        private string? GetUserAgent() => Request.Headers.UserAgent.ToString();
 
         [HttpPost("login")]
         [AllowAnonymous]
@@ -30,14 +35,28 @@ namespace bntuapplicants_backend.Controllers
         {
             var user = await _userRepo.GetByUsernameAsync(dto.Username);
             if (user == null || !BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
+            {
+                await _authLogger.LogAsync("login_failure", dto.Username,
+                    userId: user?.Id,
+                    failureReason: user == null ? "user_not_found" : "wrong_password",
+                    ipAddress: GetIp(), userAgent: GetUserAgent());
                 return Unauthorized(new { message = (string)_localizer["Auth.InvalidCredentials"] });
+            }
 
             if (!user.IsActive)
+            {
+                await _authLogger.LogAsync("login_failure", dto.Username,
+                    userId: user.Id, failureReason: "inactive",
+                    ipAddress: GetIp(), userAgent: GetUserAgent());
                 return Unauthorized(new { message = (string)_localizer["Auth.AccountDeactivated"] });
+            }
 
             var specialtyIds = await _userRepo.GetSpecialtyIdsAsync(user.Id);
             var facultyAccessIds = await _userRepo.GetFacultyAccessIdsAsync(user.Id);
             var token = _jwtService.GenerateToken(user, specialtyIds, facultyAccessIds);
+
+            await _authLogger.LogAsync("login_success", user.Username,
+                userId: user.Id, ipAddress: GetIp(), userAgent: GetUserAgent());
 
             return Ok(new LoginResponseDto
             {

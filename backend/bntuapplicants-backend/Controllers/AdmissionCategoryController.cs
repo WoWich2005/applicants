@@ -43,12 +43,13 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null,
             [FromQuery] int? groupId = null,
+            [FromQuery] string? idSearch = null,
             [FromQuery] string? sortField = null,
             [FromQuery] string? sortOrder = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
-            return Ok(await _repository.GetPagedByCompetitionListAsync(competitionListId, page, pageSize, search, groupId, sortField, sortOrder));
+            return Ok(await _repository.GetPagedByCompetitionListAsync(competitionListId, page, pageSize, search, groupId, idSearch, sortField, sortOrder));
         }
 
         [HttpGet("by-specialty/{specialtyId}")]

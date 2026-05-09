@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using Npgsql;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
 {
@@ -17,11 +18,16 @@ namespace bntuapplicants_backend.Controllers
     public class ApplicantController : ControllerBase
     {
         private readonly IApplicantRepository _repository;
+        private readonly IApplicantDeletionRequestRepository _deletionRequestRepository;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
-        public ApplicantController(IApplicantRepository repository, IStringLocalizer<SharedResources> localizer)
+        public ApplicantController(
+            IApplicantRepository repository,
+            IApplicantDeletionRequestRepository deletionRequestRepository,
+            IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
+            _deletionRequestRepository = deletionRequestRepository;
             _localizer = localizer;
         }
 
@@ -38,12 +44,13 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null,
             [FromQuery] string? externalIdSearch = null,
+            [FromQuery] string? idSearch = null,
             [FromQuery] string? sortField = null,
             [FromQuery] string? sortOrder = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
-            return Ok(await _repository.GetPagedAsync(page, pageSize, search, externalIdSearch, sortField, sortOrder));
+            return Ok(await _repository.GetPagedAsync(page, pageSize, search, externalIdSearch, idSearch, sortField, sortOrder));
         }
 
         [HttpGet("{id}")]
@@ -85,6 +92,22 @@ namespace bntuapplicants_backend.Controllers
             }
             catch (PostgresException ex) when (ex.SqlState == "23505")
             {
+                var (existing, isDeleted) = await _repository.FindByExternalIdAsync(dto.ExternalId!);
+                if (existing != null && isDeleted)
+                {
+                    return Conflict(new
+                    {
+                        message = (string)_localizer["Applicant.ExternalIdExistsDeleted"],
+                        isDeleted = true,
+                        deletedApplicant = new
+                        {
+                            id = existing.Id,
+                            name = existing.Name,
+                            notes = existing.Notes,
+                            externalId = existing.ExternalId
+                        }
+                    });
+                }
                 return Conflict(new { message = (string)_localizer["Applicant.ExternalIdExists"] });
             }
         }
@@ -93,15 +116,17 @@ namespace bntuapplicants_backend.Controllers
         [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Delete(int id)
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
                 return NotFound(new { message = (string)_localizer["Applicant.NotFound", id] });
 
-            var deleted = await _repository.DeleteAsync(id);
-            if (!deleted)
-                return StatusCode(500, new { message = (string)_localizer["Applicant.DeleteError"] });
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) is { } uid ? int.Parse(uid) : (int?)null;
+            var requested = await _deletionRequestRepository.RequestAsync(id, userId);
+            if (!requested)
+                return Conflict(new { message = (string)_localizer["Applicant.DeletionRequest.AlreadyPending"] });
 
             return NoContent();
         }

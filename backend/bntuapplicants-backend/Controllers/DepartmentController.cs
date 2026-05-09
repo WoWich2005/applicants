@@ -49,6 +49,7 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null,
             [FromQuery] int? facultyId = null,
+            [FromQuery] string? idSearch = null,
             [FromQuery] string? sortField = null,
             [FromQuery] string? sortOrder = null)
         {
@@ -59,9 +60,9 @@ namespace bntuapplicants_backend.Controllers
             var effectiveFacultyId = managerFacultyId ?? facultyId;
 
             if (effectiveFacultyId.HasValue)
-                return Ok(await _repository.GetPagedByFacultyIdAsync(effectiveFacultyId.Value, page, pageSize, search, sortField, sortOrder));
+                return Ok(await _repository.GetPagedByFacultyIdAsync(effectiveFacultyId.Value, page, pageSize, search, idSearch, sortField, sortOrder));
 
-            return Ok(await _repository.GetPagedAsync(page, pageSize, search, sortField, sortOrder));
+            return Ok(await _repository.GetPagedAsync(page, pageSize, search, idSearch, sortField, sortOrder));
         }
 
         [HttpGet("by-faculty/{facultyId}")]

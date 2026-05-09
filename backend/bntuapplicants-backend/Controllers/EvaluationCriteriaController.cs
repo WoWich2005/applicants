@@ -37,12 +37,13 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] int pageSize = 10,
             [FromQuery] string? search = null,
             [FromQuery] string? type = null,
+            [FromQuery] string? idSearch = null,
             [FromQuery] string? sortField = null,
             [FromQuery] string? sortOrder = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
-            return Ok(await _repository.GetPagedAsync(page, pageSize, search, type, sortField, sortOrder));
+            return Ok(await _repository.GetPagedAsync(page, pageSize, search, type, idSearch, sortField, sortOrder));
         }
 
         [HttpGet("{id}/delete-check")]
