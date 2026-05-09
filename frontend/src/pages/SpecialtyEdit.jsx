@@ -9,6 +9,7 @@ import { admissionCategoriesApi } from "../api/admissionCategoriesApi"
 import SpecialtyForm from "../components/Forms/SpecialtyForm"
 import CompetitionListSimpleForm from "../components/Forms/CompetitionListSimpleForm"
 import CrudTable from "../components/CrudTable"
+import EntityHistory from "../components/EntityHistory"
 import { ROUTES } from "../constants/routes"
 import { useAuth } from "../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
@@ -17,15 +18,22 @@ function SpecialtyEdit() {
   const { auth } = useAuth()
   const { t } = useTranslation()
   const readOnly = auth?.role === 'DataViewer'
-  const [messageApi, contextHolder] = useMessage()
+  const [, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
   const { specialtyId } = useParams()
 
   const [isLoading, setIsLoading] = useState(true)
   const [responseStatus, setResponseStatus] = useState(null)
   const [specialty, setSpecialty] = useState({ id: null, name: null, departmentId: null })
+  const [historyKey, setHistoryKey] = useState(0)
 
   useEffect(() => {
+    if (!/^\d+$/.test(specialtyId)) {
+      setResponseStatus(404)
+      setIsLoading(false)
+      return
+    }
+
     const fetchData = async () => {
       try {
         const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
@@ -93,6 +101,7 @@ function SpecialtyEdit() {
   }
 
   const onTabChange = (key) => {
+    if (key === 'history') setHistoryKey(k => k + 1)
     searchParams.set("act", key)
     setSearchParams(searchParams)
   }
@@ -136,6 +145,13 @@ function SpecialtyEdit() {
 
           columns={[
             {
+              title: t('common.colId'),
+              dataIndex: "id",
+              key: "id",
+              withSearch: true,
+              sorter: true,
+            },
+            {
               title: t('competitionList.colName'),
               dataIndex: "name",
               key: "name",
@@ -146,11 +162,17 @@ function SpecialtyEdit() {
               title: t('competitionList.colPlan'),
               dataIndex: "plan",
               key: "plan",
-              sorter: true
+              sorter: true,
+              withSearch: true,
             }
           ]}
         />
       ),
+    },
+    {
+      key: "history",
+      label: t('specialty.edit.tabHistory'),
+      children: <EntityHistory key={historyKey} entityType="specialty" entityId={specialty?.id} />,
     },
   ]
 

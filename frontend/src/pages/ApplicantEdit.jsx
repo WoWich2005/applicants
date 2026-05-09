@@ -1,8 +1,8 @@
-import { Breadcrumb, Result, Skeleton, Tabs } from "antd"
+import { Alert, Breadcrumb, Result, Skeleton, Tabs } from "antd"
 import Title from "../components/Title"
 import { useParams, useSearchParams, Link } from "react-router"
 import { ROUTES } from "../constants/routes"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import ApplicantForm from "../components/Forms/ApplicantForm"
 import { applicantsApi } from "../api/applicantsApi"
 import { useAuth } from "../contexts/AuthContext"
@@ -10,15 +10,11 @@ import CrudTable from "../components/CrudTable"
 import useMessage from "antd/es/message/useMessage"
 import { applicantAdmissionCategoriesApi } from "../api/applicantAdmissionCategoriesApi"
 import ApplicantAdmissionCategoryForm from "../components/Forms/ApplicantAdmissionCategoryForm"
-import { admissionCategoriesApi } from "../api/admissionCategoriesApi"
 import { applicantEvaluationValuesApi } from "../api/applicantEvaluationValuesApi"
 import ApplicantEvaluationValueForm from "../components/Forms/ApplicantEvaluationValueForm"
-import { evaluationCriteriaApi } from "../api/evaluationCriteriaApi"
-import { competitionListsApi } from "../api/competitionListsApi"
-import { specialtiesApi } from "../api/specialtiesApi"
-import { departmentsApi } from "../api/departmentsApi"
-import { facultiesApi } from "../api/facultyApi"
 import { useTranslation } from "react-i18next"
+import { auditApi } from "../api/auditApi"
+import EntityHistory from "../components/EntityHistory"
 
 function ApplicantEdit() {
   const { auth } = useAuth()
@@ -29,46 +25,31 @@ function ApplicantEdit() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { applicantId } = useParams()
 
-  const [admissionCategoriesDict, setAdmissionCategoriesDict] = useState(/** @type {Record<number, any>} */ ({}))
-  const [competitionListsDict, setCompetitionListsDict] = useState(/** @type {Record<number, any>} */ ({}))
-  const [specialtiesDict, setSpecialtiesDict] = useState(/** @type {Record<number, any>} */ ({}))
-  const [departmentsDict, setDepartmentsDict] = useState(/** @type {Record<number, any>} */ ({}))
-  const [facultiesDict, setFacultiesDict] = useState(/** @type {Record<number, any>} */ ({}))
-  const [evaluationCriteriaDict, setEvaluationCriteriaDict] = useState(/** @type {Record<number, any>} */ ({}))
-
   const [isLoading, setIsLoading] = useState(true)
   const [responseStatus, setResponseStatus] = useState(null)
   const [applicant, setApplicant] = useState({ id: null, name: null })
 
+  const [incompleteInfo, setIncompleteInfo] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const triggerRefresh = () => setRefreshKey(k => k + 1)
+
+  const fetchApplicationsPaged = useCallback(
+    (params) => applicantAdmissionCategoriesApi.getAllByApplicant(applicantId, params),
+    [applicantId]
+  )
+
+  const fetchEvaluationPaged = useCallback(
+    (params) => applicantEvaluationValuesApi.getAllByApplicant(applicantId, params),
+    [applicantId]
+  )
+
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [categoriesResponse, criteriaResponse, compListsResponse, specialtiesResponse, departmentsResponse, facultiesResponse] = await Promise.all([
-          admissionCategoriesApi.getAll(),
-          evaluationCriteriaApi.getAll(),
-          competitionListsApi.getAll(),
-          specialtiesApi.getAll(),
-          departmentsApi.getAll(),
-          facultiesApi.getAll(),
-        ])
-
-        const toDict = (arr) => arr.reduce((acc, item) => { acc[item.id] = item; return acc }, {})
-
-        setAdmissionCategoriesDict(toDict(categoriesResponse.data))
-        setEvaluationCriteriaDict(toDict(criteriaResponse.data))
-        setCompetitionListsDict(toDict(compListsResponse.data))
-        setSpecialtiesDict(toDict(specialtiesResponse.data))
-        setDepartmentsDict(toDict(departmentsResponse.data))
-        setFacultiesDict(toDict(facultiesResponse.data))
-      } catch {
-        messageApi.error(t('applicant.edit.fetchError'))
-      }
+    if (!/^\d+$/.test(applicantId)) {
+      setResponseStatus(404)
+      setIsLoading(false)
+      return
     }
 
-    fetchData()
-  }, [])
-
-  useEffect(() => {
     const fetchData = async () => {
       try {
         const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
@@ -89,6 +70,13 @@ function ApplicantEdit() {
 
     fetchData()
   }, [applicantId])
+
+  useEffect(() => {
+    if (!applicantId) return
+    auditApi.getIncompleteForApplicant(applicantId)
+      .then(r => setIncompleteInfo(r.data ?? null))
+      .catch(() => {})
+  }, [applicantId, refreshKey])
 
   if (isLoading) {
     return <Skeleton paragraph={{ rows: 12 }} />
@@ -113,6 +101,7 @@ function ApplicantEdit() {
   }
 
   const onTabChange = (key) => {
+    if (key === 'history') triggerRefresh()
     searchParams.set("act", key)
     setSearchParams(searchParams)
   }
@@ -125,7 +114,7 @@ function ApplicantEdit() {
         <ApplicantForm
           initialValues={applicant}
           elementId={applicant?.id}
-          handleRequestResult={(updated) => setApplicant(updated)}
+          handleRequestResult={(updated) => { setApplicant(updated); triggerRefresh() }}
           readOnly={readOnly}
         />
       ),
@@ -138,8 +127,10 @@ function ApplicantEdit() {
           elementForm={ApplicantAdmissionCategoryForm}
           elementFormProps={{ applicantId }}
           readOnly={readOnly}
+          onDataChange={triggerRefresh}
+          serverSidePagination={true}
 
-          getAllAsync={() => applicantAdmissionCategoriesApi.getAllByApplicant(applicantId)}
+          getPagedAsync={fetchApplicationsPaged}
           deleteAsync={(id) => applicantAdmissionCategoriesApi.delete(id)}
 
           addButtonTitle={t('applicantAdmissionCategory.addButton')}
@@ -148,89 +139,57 @@ function ApplicantEdit() {
 
           columns={[
             {
+              title: t('common.colId'),
+              dataIndex: "id",
+              key: "id",
+              width: "80px",
+              sorter: true,
+              withSearch: true,
+            },
+            {
               title: t('applicantAdmissionCategory.colPriority'),
               dataIndex: "selectionPriority",
               key: "selectionPriority",
               width: "120px",
               defaultSortOrder: "ascend",
-              sorter: (a, b) => a.selectionPriority - b.selectionPriority
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('applicantAdmissionCategory.colFaculty'),
-              key: "faculty",
-              render: (_, el) => {
-                const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
-                const specialty = specialtiesDict[compList?.specialtyId]
-                const department = departmentsDict[specialty?.departmentId]
-                return facultiesDict[department?.facultyId]?.name ?? ""
-              },
-              sorter: (a, b) => {
-                const getName = (el) => {
-                  const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
-                  const specialty = specialtiesDict[compList?.specialtyId]
-                  const department = departmentsDict[specialty?.departmentId]
-                  return facultiesDict[department?.facultyId]?.name ?? ""
-                }
-                return getName(a).localeCompare(getName(b))
-              }
+              dataIndex: "facultyName",
+              key: "facultyName",
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('applicantAdmissionCategory.colDepartment'),
-              key: "department",
-              render: (_, el) => {
-                const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
-                const specialty = specialtiesDict[compList?.specialtyId]
-                return departmentsDict[specialty?.departmentId]?.name ?? ""
-              },
-              sorter: (a, b) => {
-                const getName = (el) => {
-                  const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
-                  const specialty = specialtiesDict[compList?.specialtyId]
-                  return departmentsDict[specialty?.departmentId]?.name ?? ""
-                }
-                return getName(a).localeCompare(getName(b))
-              }
+              dataIndex: "departmentName",
+              key: "departmentName",
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('applicantAdmissionCategory.colSpecialty'),
-              key: "specialty",
-              render: (_, el) => {
-                const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
-                return specialtiesDict[compList?.specialtyId]?.name ?? ""
-              },
-              sorter: (a, b) => {
-                const getName = (el) => {
-                  const compList = competitionListsDict[admissionCategoriesDict[el.admissionCategoryId]?.competitionListId]
-                  return specialtiesDict[compList?.specialtyId]?.name ?? ""
-                }
-                return getName(a).localeCompare(getName(b))
-              }
+              dataIndex: "specialtyName",
+              key: "specialtyName",
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('applicantAdmissionCategory.colCompetitionList'),
-              key: "competitionList",
-              render: (_, el) => {
-                const compListId = admissionCategoriesDict[el.admissionCategoryId]?.competitionListId
-                return competitionListsDict[compListId]?.name ?? ""
-              },
-              sorter: (a, b) => {
-                const getName = (el) => {
-                  const compListId = admissionCategoriesDict[el.admissionCategoryId]?.competitionListId
-                  return competitionListsDict[compListId]?.name ?? ""
-                }
-                return getName(a).localeCompare(getName(b))
-              }
+              dataIndex: "competitionListName",
+              key: "competitionListName",
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('applicantAdmissionCategory.colCategory'),
-              dataIndex: "admissionCategoryId",
-              key: "admissionCategoryId",
-              sorter: (a, b) =>
-                (admissionCategoriesDict[a.admissionCategoryId]?.name ?? "").localeCompare(
-                  admissionCategoriesDict[b.admissionCategoryId]?.name ?? ""
-                ),
-              render: (_, el) => admissionCategoriesDict[el.admissionCategoryId]?.name ?? el.admissionCategoryId
-            }
+              dataIndex: "categoryName",
+              key: "categoryName",
+              sorter: true,
+              withSearch: true,
+            },
           ]}
         />
       ),
@@ -243,8 +202,10 @@ function ApplicantEdit() {
           elementForm={ApplicantEvaluationValueForm}
           elementFormProps={{ applicantId }}
           readOnly={readOnly}
+          onDataChange={triggerRefresh}
+          serverSidePagination={true}
 
-          getAllAsync={() => applicantEvaluationValuesApi.getAllByApplicant(applicantId)}
+          getPagedAsync={fetchEvaluationPaged}
           deleteAsync={(id) => applicantEvaluationValuesApi.delete(id)}
 
           addButtonTitle={t('applicantEvaluationValue.addButton')}
@@ -253,25 +214,36 @@ function ApplicantEdit() {
 
           columns={[
             {
+              title: t('common.colId'),
+              dataIndex: "id",
+              key: "id",
+              width: "100px",
+              sorter: true,
+              withSearch: true,
+            },
+            {
               title: t('applicantEvaluationValue.colCriteria'),
-              dataIndex: "evaluationCriteriaId",
-              key: "evaluationCriteriaId",
-              sorter: (a, b) =>
-                (evaluationCriteriaDict[a.evaluationCriteriaId]?.name ?? "").localeCompare(
-                  evaluationCriteriaDict[b.evaluationCriteriaId]?.name ?? ""
-                ),
-              render: (_, el) => evaluationCriteriaDict[el.evaluationCriteriaId]?.name ?? el.evaluationCriteriaId
+              dataIndex: "criteriaName",
+              key: "criteriaName",
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('applicantEvaluationValue.colValue'),
               dataIndex: "value",
               key: "value",
               width: "150px",
-              sorter: (a, b) => a.value - b.value
-            }
+              sorter: true,
+              withSearch: true,
+            },
           ]}
         />
       ),
+    },
+    {
+      key: "history",
+      label: t('audit.applicantData.historyTab'),
+      children: <EntityHistory key={refreshKey} entityType="applicant" entityId={applicant?.id} />,
     },
   ]
 
@@ -286,6 +258,25 @@ function ApplicantEdit() {
         ]}
       />
       <Title title={readOnly ? t('applicant.edit.titleView') : t('applicant.edit.titleEdit')} />
+
+      {incompleteInfo?.missingCriteria?.length > 0 && (
+        <Alert
+          type="warning"
+          message={t('audit.validation.blockerMissingCriteria')}
+          description={incompleteInfo.missingCriteria.join(', ')}
+          style={{ marginBottom: 16 }}
+          showIcon
+        />
+      )}
+
+      {incompleteInfo?.hasInvalidPriorities && (
+        <Alert
+          type="warning"
+          message={t('audit.validation.blockerInvalidPriorities')}
+          style={{ marginBottom: 16 }}
+          showIcon
+        />
+      )}
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}

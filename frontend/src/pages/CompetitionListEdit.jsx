@@ -1,4 +1,4 @@
-import { Breadcrumb, List, Result, Skeleton, Tabs, Typography } from "antd"
+import { Alert, Breadcrumb, List, Result, Skeleton, Tabs, Typography } from "antd"
 import Title from "../components/Title"
 import { useParams, useSearchParams, generatePath, Link } from "react-router"
 import { ROUTES } from "../constants/routes"
@@ -12,6 +12,7 @@ import { admissionCategoriesApi } from "../api/admissionCategoriesApi"
 import { applicantAdmissionCategoriesApi } from "../api/applicantAdmissionCategoriesApi"
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { specialtiesApi } from "../api/specialtiesApi"
+import EntityHistory from "../components/EntityHistory"
 import { useAuth } from "../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
 
@@ -28,6 +29,10 @@ function CompetitionListEdit() {
   const [responseStatus, setResponseStatus] = useState(null)
   const [list, setList] = useState({ id: null, name: null, plan: null, specialtyId: null })
   const [specialtyName, setSpecialtyName] = useState(null)
+  const [categories, setCategories] = useState(/** @type {any[]} */ ([]))
+  const [categoriesRefreshKey, setCategoriesRefreshKey] = useState(0)
+  const triggerCategoriesRefresh = () => setCategoriesRefreshKey(k => k + 1)
+  const [historyKey, setHistoryKey] = useState(0)
 
   useEffect(() => {
     const fetchGroups = async () => {
@@ -46,6 +51,12 @@ function CompetitionListEdit() {
   }, [])
 
   useEffect(() => {
+    if (!/^\d+$/.test(listId)) {
+      setResponseStatus(404)
+      setIsLoading(false)
+      return
+    }
+
     const fetchList = async () => {
       try {
         const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
@@ -74,6 +85,12 @@ function CompetitionListEdit() {
       .catch(() => {})
   }, [list.specialtyId])
 
+  useEffect(() => {
+    admissionCategoriesApi.getAllByCompetitionList(listId)
+      .then(r => setCategories(r.data ?? []))
+      .catch(() => {})
+  }, [listId, categoriesRefreshKey])
+
   if (isLoading) {
     return <Skeleton paragraph={{ rows: 12 }} />
   }
@@ -97,6 +114,7 @@ function CompetitionListEdit() {
   }
 
   const onTabChange = (key) => {
+    if (key === 'history') setHistoryKey(k => k + 1)
     searchParams.set("act", key)
     setSearchParams(searchParams)
   }
@@ -150,6 +168,7 @@ function CompetitionListEdit() {
           serverSidePagination={true}
           getPagedAsync={(params) => admissionCategoriesApi.getPagedByCompetitionList(listId, params)}
           deleteAsync={(id) => admissionCategoriesApi.delete(id)}
+          onDataChange={triggerCategoriesRefresh}
 
           getDeleteBlockers={getDeleteBlockers}
           renderDeleteBlockersContent={renderDeleteBlockersContent}
@@ -159,6 +178,13 @@ function CompetitionListEdit() {
           renderDeleteText={() => t('admissionCategory.deleteText')}
 
           columns={[
+            {
+              title: t('common.colId'),
+              dataIndex: "id",
+              key: "id",
+              withSearch: true,
+              sorter: true,
+            },
             {
               title: t('admissionCategory.colPriority'),
               dataIndex: "priority",
@@ -193,6 +219,11 @@ function CompetitionListEdit() {
         />
       ),
     },
+    {
+      key: "history",
+      label: t('competitionList.edit.tabHistory'),
+      children: <EntityHistory key={historyKey} entityType="competition_list" entityId={list?.id} />,
+    },
   ]
 
   return (
@@ -208,6 +239,24 @@ function CompetitionListEdit() {
         ]}
       />
       <Title title={readOnly ? t('competitionList.edit.titleView') : t('competitionList.edit.titleEdit')} />
+
+      {(() => {
+        const priorities = categories.map(c => c.priority)
+        const n = priorities.length
+        const invalid = n > 0 && (
+          new Set(priorities).size !== n ||
+          Math.min(...priorities) !== 1 ||
+          Math.max(...priorities) !== n
+        )
+        return invalid ? (
+          <Alert
+            type="warning"
+            message={t('admissionCategory.invalidPriorities')}
+            style={{ marginBottom: 16 }}
+            showIcon
+          />
+        ) : null
+      })()}
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}

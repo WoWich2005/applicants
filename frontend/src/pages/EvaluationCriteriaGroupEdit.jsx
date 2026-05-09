@@ -1,15 +1,15 @@
-import { Breadcrumb, Result, Skeleton, Tabs } from "antd"
+import { Alert, Breadcrumb, Result, Skeleton, Tabs } from "antd"
 import Title from "../components/Title"
 import { useParams, useSearchParams, Link } from "react-router"
 import { ROUTES } from "../constants/routes"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import useMessage from "antd/es/message/useMessage"
 import CrudTable from "../components/CrudTable"
 import EvaluationCriteriaGroupForm from "../components/Forms/EvaluationCriteriaGroupForm"
 import EvaluationCriteriaGroupItemForm from "../components/Forms/EvaluationCriteriaGroupItemForm"
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { evaluationCriteriaGroupItemsApi } from "../api/evaluationCriteriaGroupItemsApi"
-import { evaluationCriteriaApi } from "../api/evaluationCriteriaApi"
+import EntityHistory from "../components/EntityHistory"
 import { useAuth } from "../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
 
@@ -21,28 +21,19 @@ function EvaluationCriteriaGroupEdit() {
   const [searchParams, setSearchParams] = useSearchParams()
   const { groupId } = useParams()
 
-  const [criteriaDict, setCriteriaDict] = useState({})
   const [isLoading, setIsLoading] = useState(true)
   const [responseStatus, setResponseStatus] = useState(null)
   const [group, setGroup] = useState({ id: null, name: null })
+  const [groupItems, setGroupItems] = useState(/** @type {any[]} */ ([]))
+  const [historyKey, setHistoryKey] = useState(0)
 
   useEffect(() => {
-    const fetchCriteria = async () => {
-      try {
-        const response = await evaluationCriteriaApi.getAll()
-        setCriteriaDict(response.data.reduce((acc, c) => {
-          acc[c.id] = c
-          return acc
-        }, {}))
-      } catch {
-        messageApi.error(t('evaluationCriteriaGroup.edit.fetchError'))
-      }
+    if (!/^\d+$/.test(groupId)) {
+      setResponseStatus(404)
+      setIsLoading(false)
+      return
     }
 
-    fetchCriteria()
-  }, [])
-
-  useEffect(() => {
     const fetchGroup = async () => {
       try {
         const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
@@ -63,6 +54,17 @@ function EvaluationCriteriaGroupEdit() {
 
     fetchGroup()
   }, [groupId])
+
+  useEffect(() => {
+    evaluationCriteriaGroupItemsApi.getAllByGroup(groupId)
+      .then(r => setGroupItems(r.data))
+      .catch(() => {})
+  }, [groupId])
+
+  const fetchCriteriaItemsPaged = useCallback(
+    (params) => evaluationCriteriaGroupItemsApi.getPagedByGroup(groupId, params),
+    [groupId]
+  )
 
   if (isLoading) {
     return <Skeleton paragraph={{ rows: 12 }} />
@@ -87,6 +89,7 @@ function EvaluationCriteriaGroupEdit() {
   }
 
   const onTabChange = (key) => {
+    if (key === 'history') setHistoryKey(k => k + 1)
     searchParams.set("act", key)
     setSearchParams(searchParams)
   }
@@ -114,7 +117,8 @@ function EvaluationCriteriaGroupEdit() {
 
           readOnly={readOnly}
 
-          getAllAsync={() => evaluationCriteriaGroupItemsApi.getAllByGroup(groupId)}
+          serverSidePagination={true}
+          getPagedAsync={fetchCriteriaItemsPaged}
           deleteAsync={(id) => evaluationCriteriaGroupItemsApi.delete(id)}
 
           addButtonTitle={t('evaluationCriteriaGroupItem.addButton')}
@@ -123,26 +127,36 @@ function EvaluationCriteriaGroupEdit() {
 
           columns={[
             {
+              title: t('common.colId'),
+              dataIndex: "id",
+              key: "id",
+              sorter: true,
+              withSearch: true,
+            },
+            {
               title: t('evaluationCriteriaGroupItem.colPriority'),
               dataIndex: "priority",
               key: "priority",
               width: 120,
               defaultSortOrder: "ascend",
-              sorter: (a, b) => a.priority - b.priority
+              sorter: true,
+              withSearch: true,
             },
             {
               title: t('evaluationCriteriaGroupItem.colCriteria'),
-              dataIndex: "criteriaId",
-              key: "criteriaId",
-              render: (_, el) => criteriaDict[el.criteriaId]?.name ?? el.criteriaId,
-              sorter: (a, b) =>
-                (criteriaDict[a.criteriaId]?.name ?? "").localeCompare(
-                  criteriaDict[b.criteriaId]?.name ?? ""
-                )
+              dataIndex: "criteriaName",
+              key: "criteriaName",
+              sorter: true,
+              withSearch: true,
             }
           ]}
         />
       ),
+    },
+    {
+      key: "history",
+      label: t('evaluationCriteriaGroup.edit.tabHistory'),
+      children: <EntityHistory key={historyKey} entityType="evaluation_criteria_group" entityId={group?.id} />,
     },
   ]
 
@@ -157,6 +171,24 @@ function EvaluationCriteriaGroupEdit() {
         ]}
       />
       <Title title={readOnly ? t('evaluationCriteriaGroup.edit.titleView') : t('evaluationCriteriaGroup.edit.titleEdit')} />
+
+      {(() => {
+        const priorities = groupItems.map(i => i.priority)
+        const n = priorities.length
+        const invalid = n > 0 && (
+          new Set(priorities).size !== n ||
+          Math.min(...priorities) !== 1 ||
+          Math.max(...priorities) !== n
+        )
+        return invalid ? (
+          <Alert
+            type="warning"
+            message={t('evaluationCriteriaGroupItem.invalidPriorities')}
+            style={{ marginBottom: 16 }}
+            showIcon
+          />
+        ) : null
+      })()}
 
       <Tabs
         activeKey={searchParams.get("act") ?? "data"}
