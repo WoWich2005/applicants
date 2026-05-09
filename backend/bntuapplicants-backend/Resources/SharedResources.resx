@@ -96,7 +96,6 @@
   <data name="EvaluationCriteriaGroupItem.Priority.Required" xml:space="preserve"><value>Приоритет обязателен</value></data>
   <data name="EvaluationCriteriaGroupItem.Priority.Range" xml:space="preserve"><value>Приоритет должен быть натуральным числом</value></data>
   <!-- EvaluationCriteriaGroupItem controller -->
-  <data name="EvaluationCriteriaGroupItem.CriteriaExists" xml:space="preserve"><value>Этот оценочный параметр уже добавлен в группу</value></data>
   <data name="EvaluationCriteriaGroupItem.CreateError" xml:space="preserve"><value>Ошибка. Не удалось добавить оценочный параметр в группу</value></data>
 
   <!-- CompetitionList DTO -->
@@ -136,12 +135,9 @@
   <!-- Applicant controller -->
   <data name="Applicant.CreateError" xml:space="preserve"><value>Ошибка. Не удалось создать абитуриента</value></data>
   <data name="Applicant.ExternalIdExists" xml:space="preserve"><value>Абитуриент с таким ID уже существует</value></data>
-  <data name="Applicant.ExternalIdExistsDeleted" xml:space="preserve"><value>Абитуриент с таким идентификатором существует, но помечен на удаление</value></data>
   <data name="Applicant.NotFound" xml:space="preserve"><value>Абитуриент с id {0} не найден</value></data>
   <data name="Applicant.DeleteError" xml:space="preserve"><value>Ошибка при удалении абитуриента</value></data>
   <data name="Applicant.UpdateError" xml:space="preserve"><value>Ошибка при обновлении данных абитуриента</value></data>
-  <data name="Applicant.DeletionRequest.AlreadyPending" xml:space="preserve"><value>Запрос на удаление этого абитуриента уже ожидает валидации</value></data>
-  <data name="Applicant.DeletionRequest.NotFound" xml:space="preserve"><value>Запрос на удаление не найден или уже обработан</value></data>
 
   <!-- ApplicantAdmissionCategory DTO -->
   <data name="ApplicantAdmissionCategory.ApplicantId.Required" xml:space="preserve"><value>Id абитуриента обязателен</value></data>
@@ -149,7 +145,6 @@
   <data name="ApplicantAdmissionCategory.SelectionPriority.Required" xml:space="preserve"><value>Приоритет выбора обязателен</value></data>
   <data name="ApplicantAdmissionCategory.SelectionPriority.Range" xml:space="preserve"><value>Приоритет должен быть натуральным числом</value></data>
   <!-- ApplicantAdmissionCategory controller -->
-  <data name="ApplicantAdmissionCategory.AlreadyExists" xml:space="preserve"><value>Абитуриент уже подал заявку на эту категорию приема</value></data>
   <data name="ApplicantAdmissionCategory.CreateError" xml:space="preserve"><value>Ошибка. Не удалось добавить категорию приема для абитуриента</value></data>
 
   <!-- ApplicantEvaluationValue DTO -->

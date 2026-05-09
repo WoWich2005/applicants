@@ -124,8 +124,14 @@ builder.Services.AddScoped<IAdmissionCategoryRepository, AdmissionCategoryReposi
 builder.Services.AddScoped<IApplicantAdmissionCategoryRepository, ApplicantAdmissionCategoryRepository>();
 builder.Services.AddScoped<IApplicantEvaluationValueRepository, ApplicantEvaluationValueRepository>();
 builder.Services.AddScoped<ISelectedApplicantRepository, SelectedApplicantRepository>();
+builder.Services.AddScoped<IAuditRepository, AuditRepository>();
+builder.Services.AddScoped<IApplicantDeletionRequestRepository, ApplicantDeletionRequestRepository>();
 builder.Services.AddScoped<SelectionService>();
 builder.Services.AddScoped<JwtService>();
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+builder.Services.AddScoped<IAuditLogger, AuditLogger>();
+builder.Services.AddScoped<IAuthLogger, AuthLogger>();
 
 var app = builder.Build();
 

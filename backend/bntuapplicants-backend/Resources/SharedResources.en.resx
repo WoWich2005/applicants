@@ -96,6 +96,7 @@
   <data name="EvaluationCriteriaGroupItem.Priority.Required" xml:space="preserve"><value>Priority is required</value></data>
   <data name="EvaluationCriteriaGroupItem.Priority.Range" xml:space="preserve"><value>Priority must be a positive integer</value></data>
   <!-- EvaluationCriteriaGroupItem controller -->
+  <data name="EvaluationCriteriaGroupItem.CriteriaExists" xml:space="preserve"><value>This evaluation criterion is already added to the group</value></data>
   <data name="EvaluationCriteriaGroupItem.CreateError" xml:space="preserve"><value>Error: failed to add evaluation criterion to group</value></data>
 
   <!-- CompetitionList DTO -->
@@ -135,9 +136,12 @@
   <!-- Applicant controller -->
   <data name="Applicant.CreateError" xml:space="preserve"><value>Error: failed to create applicant</value></data>
   <data name="Applicant.ExternalIdExists" xml:space="preserve"><value>An applicant with this ID already exists</value></data>
+  <data name="Applicant.ExternalIdExistsDeleted" xml:space="preserve"><value>An applicant with this identifier already exists but is marked for deletion</value></data>
   <data name="Applicant.NotFound" xml:space="preserve"><value>Applicant with id {0} not found</value></data>
   <data name="Applicant.DeleteError" xml:space="preserve"><value>Error deleting applicant</value></data>
   <data name="Applicant.UpdateError" xml:space="preserve"><value>Error updating applicant data</value></data>
+  <data name="Applicant.DeletionRequest.AlreadyPending" xml:space="preserve"><value>A deletion request for this applicant is already pending validation</value></data>
+  <data name="Applicant.DeletionRequest.NotFound" xml:space="preserve"><value>Deletion request not found or already processed</value></data>
 
   <!-- ApplicantAdmissionCategory DTO -->
   <data name="ApplicantAdmissionCategory.ApplicantId.Required" xml:space="preserve"><value>Applicant ID is required</value></data>
@@ -145,6 +149,7 @@
   <data name="ApplicantAdmissionCategory.SelectionPriority.Required" xml:space="preserve"><value>Selection priority is required</value></data>
   <data name="ApplicantAdmissionCategory.SelectionPriority.Range" xml:space="preserve"><value>Priority must be a positive integer</value></data>
   <!-- ApplicantAdmissionCategory controller -->
+  <data name="ApplicantAdmissionCategory.AlreadyExists" xml:space="preserve"><value>The applicant has already applied for this admission category</value></data>
   <data name="ApplicantAdmissionCategory.CreateError" xml:space="preserve"><value>Error: failed to add admission category for applicant</value></data>
 
   <!-- ApplicantEvaluationValue DTO -->
@@ -169,4 +174,10 @@
   <!-- Result -->
   <data name="Result.FacultyNotFound" xml:space="preserve"><value>Faculty with ID {0} not found</value></data>
   <data name="Result.NoSpecialties" xml:space="preserve"><value>No specialties found for the specified faculty</value></data>
+
+  <!-- Audit -->
+  <data name="Audit.ApplicantNotFound" xml:space="preserve"><value>Applicant not found</value></data>
+  <data name="Audit.MissingCriteria" xml:space="preserve"><value>Required evaluation criteria not filled: {0}</value></data>
+  <data name="Audit.InvalidPriorities" xml:space="preserve"><value>Application priorities are invalid: must be unique and sequential without gaps (1, 2, 3, ...)</value></data>
+  <data name="Audit.InvalidateCommentRequired" xml:space="preserve"><value>A comment is required when revoking validation</value></data>
 </root>
