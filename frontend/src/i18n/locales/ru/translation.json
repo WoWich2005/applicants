@@ -1,6 +1,9 @@
 {
   "common": {
+    "colId": "ID",
     "cancel": "Отмена",
+    "prev": "Назад",
+    "next": "Далее",
     "close": "Закрыть",
     "delete": "Удалить",
     "save": "Сохранить",
@@ -137,7 +140,8 @@
       "tabData": "Данные специальности",
       "tabCompetitionLists": "Конкурсные списки",
       "notFound": "Такой специальности не существует",
-      "serverError": "Ошибка сервера"
+      "serverError": "Ошибка сервера",
+      "tabHistory": "История изменений"
     },
     "form": {
       "nameLabel": "Имя специальности",
@@ -204,7 +208,8 @@
       "tabCriteria": "Оценочные параметры",
       "notFound": "Такой группы оценочных параметров не существует",
       "serverError": "Ошибка сервера",
-      "fetchError": "Ошибка получения данных с сервера"
+      "fetchError": "Ошибка получения данных с сервера",
+      "tabHistory": "История изменений"
     },
     "form": {
       "nameLabel": "Название группы оценочных параметров",
@@ -229,7 +234,8 @@
       "updateButton": "Обновить параметр",
       "saveError": "Ошибка сохранения оценочного параметра в группе",
       "fetchError": "Не удалось получить данные с сервера"
-    }
+    },
+    "invalidPriorities": "Приоритеты параметров некорректны: значения должны идти последовательно начиная с 1 без пропусков и повторений"
   },
   "competitionList": {
     "colName": "Название",
@@ -247,7 +253,8 @@
       "tabCategories": "Категории приема",
       "notFound": "Такого конкурсного списка не существует",
       "serverError": "Ошибка сервера",
-      "fetchError": "Ошибка получения данных с сервера"
+      "fetchError": "Ошибка получения данных с сервера",
+      "tabHistory": "История изменений"
     },
     "form": {
       "nameLabel": "Название конкурсного списка",
@@ -293,12 +300,13 @@
       "updateButton": "Обновить категорию",
       "saveError": "Ошибка сохранения категории приема на сервере",
       "fetchGroupsError": "Не удалось получить список групп оценочных параметров"
-    }
+    },
+    "invalidPriorities": "Приоритеты категорий приёма некорректны: значения должны идти последовательно начиная с 1 без пропусков и повторений"
   },
   "applicant": {
     "listTitle": "Список абитуриентов",
     "listHelpText": "Здесь Вы можете изменять данные абитуриентов",
-    "colId": "ID",
+    "colId": "Идентификатор",
     "colName": "Абитуриент",
     "editTitle": "Редактирование абитуриента \"{{name}}\"",
     "deleteText": "Удалить абитуриента \"{{name}}\"?",
@@ -314,15 +322,23 @@
       "fetchError": "Ошибка получения данных с сервера"
     },
     "form": {
-      "idLabel": "ID (номер паспорта, ID карты или любое другое уникальное значение)",
-      "idRequired": "ID абитуриента обязателен для заполнения",
-      "idMaxLength": "ID не должен превышать 255 символов",
+      "idLabel": "Идентификатор (номер паспорта, ID карты или любое другое уникальное значение)",
+      "idRequired": "Идентификатор абитуриента обязателен для заполнения",
+      "idMaxLength": "Идентификатор не должен превышать 255 символов",
       "nameLabel": "Имя абитуриента",
       "nameRequired": "Имя абитуриента обязательно для заполнения",
       "notesLabel": "Заметки",
       "addButton": "Добавить абитуриента",
       "updateButton": "Обновить данные абитуриента",
-      "saveError": "Ошибка сохранения данных абитуриента"
+      "saveError": "Ошибка сохранения данных абитуриента",
+      "deletedConflict": {
+        "title": "Абитуриент помечен на удаление",
+        "description": "Абитуриент с таким идентификатором существовал в системе, но был удален. Вы можете восстановить его или отменить действие.",
+        "restoreButton": "Восстановить абитуриента",
+        "noPermission": "Обратитесь к суперадмину для восстановления абитуриента.",
+        "restoreSuccess": "Абитуриент успешно восстановлен",
+        "restoreError": "Ошибка при восстановлении абитуриента"
+      }
     }
   },
   "applicantAdmissionCategory": {
@@ -426,5 +442,205 @@
       "createButton": "Создать",
       "saveError": "Ошибка сохранения"
     }
+  },
+  "audit": {
+    "nav": "Аудит",
+    "logNav": "Журнал действий",
+    "tabs": {
+      "applicants": "Аудит данных абитуриентов",
+      "incomplete": "Некорректные заявки",
+      "invalidGroups": "Некорректные группы оценочных параметров",
+      "invalidAdmissionCategories": "Некорректные конкурсные списки"
+    },
+    "history": {
+      "title": "История изменений",
+      "empty": "История изменений отсутствует",
+      "columns": {
+        "date": "Дата",
+        "user": "Пользователь",
+        "entity": "Сущность",
+        "action": "Действие",
+        "changes": "Изменения"
+      }
+    },
+    "actions": {
+      "create": "Создание",
+      "update": "Изменение",
+      "delete": "Удаление",
+      "validate": "Валидация абитуриента",
+      "invalidate": "Отмена валидации абитуриента",
+      "delete_confirmed": "Удаление абитуриента подтверждено",
+      "delete_rejected": "Отмена удаления абитуриента"
+    },
+    "authLog": {
+      "title": "Журнал авторизации",
+      "columns": {
+        "date": "Дата",
+        "userId": "ID пользователя",
+        "username": "Пользователь",
+        "event": "Событие",
+        "reason": "Причина",
+        "ip": "IP-адрес",
+        "userAgent": "Браузер"
+      },
+      "events": {
+        "login_success": "Вход выполнен",
+        "login_failure": "Неудачный вход",
+        "token_invalid": "Недействительный токен"
+      },
+      "failureReasons": {
+        "wrong_password": "Неверный пароль",
+        "user_not_found": "Пользователь не найден",
+        "inactive": "Аккаунт деактивирован"
+      }
+    },
+    "validation": {
+      "validate": "Валидировать",
+      "invalidate": "Отменить валидацию",
+      "validated": "Подтверждено",
+      "notValidated": "Не подтверждено",
+      "validateTitle": "Подтверждение данных абитуриента",
+      "invalidateTitle": "Отзыв валидации",
+      "commentLabel": "Комментарий",
+      "commentRequired": "Укажите причину отзыва валидации",
+      "confirmValidate": "Подтвердить",
+      "confirmInvalidate": "Отозвать",
+      "changedAfterValidation": "Данные изменены после последней валидации",
+      "blockerMissingCriteria": "Не заполнены обязательные оценочные параметры",
+      "blockerInvalidPriorities": "Приоритеты заявок некорректны",
+      "validateError": "Ошибка при подтверждении валидации",
+      "invalidateError": "Ошибка при отзыве валидации"
+    },
+    "applicantData": {
+      "info": "Данные абитуриента",
+      "evaluationValues": "Оценочные параметры",
+      "admissionCategories": "Заявки",
+      "historyTab": "История изменений",
+      "criteria": "Критерий",
+      "value": "Значение",
+      "filled": "Заполнен",
+      "notFilled": "Не заполнен",
+      "priority": "Приоритет",
+      "specialty": "Специальность",
+      "category": "Категория приёма"
+    },
+    "incomplete": {
+      "columns": {
+        "externalId": "Идентификатор",
+        "name": "ФИО",
+        "issues": "Проблемы",
+        "action": "Действие"
+      },
+      "goToEdit": "Редактировать",
+      "missingCriteria": "Не заполнены: {{criteria}}",
+      "invalidPriorities": "Некорректные приоритеты заявок",
+      "empty": "Все данные заполнены корректно"
+    },
+    "invalidGroups": {
+      "columns": {
+        "name": "Группа оценочных параметров",
+        "action": "Действие"
+      },
+      "goToEdit": "Редактировать",
+      "empty": "Некорректных групп не найдено"
+    },
+    "invalidAdmissionCategories": {
+      "columns": {
+        "facultyName": "Факультет",
+        "departmentName": "Кафедра",
+        "specialtyName": "Специальность",
+        "name": "Конкурсный список",
+        "action": "Действие"
+      },
+      "goToEdit": "Редактировать",
+      "empty": "Некорректных конкурсных списков не найдено"
+    },
+    "unvalidated": {
+      "sectionTitle": "Данные абитуриентов",
+      "columns": {
+        "externalId": "Идентификатор",
+        "name": "ФИО",
+        "status": "Статус",
+        "action": "Действие"
+      },
+      "filterAll": "Все",
+      "filterUnvalidated": "Не подтверждены",
+      "filterValidated": "Подтверждены",
+      "empty": "Нет абитуриентов"
+    },
+    "entityTypes": {
+      "applicant": "Абитуриент",
+      "faculty": "Факультет",
+      "department": "Кафедра",
+      "specialty": "Специальность",
+      "competition_list": "Конкурсный список",
+      "admission_category": "Категория приёма",
+      "evaluation_criteria": "Оценочный параметр",
+      "evaluation_criteria_group": "Группа оценочных параметров",
+      "evaluation_criteria_group_item": "Элемент группы оценочных параметров",
+      "applicant_evaluation_value": "Оценочный параметр абитуриента",
+      "applicant_admission_category": "Заявка абитуриента",
+      "user": "Пользователь"
+    },
+    "log": {
+      "title": "Журнал действий",
+      "columns": {
+        "date": "Дата",
+        "user": "Пользователь",
+        "action": "Действие",
+        "entity": "Сущность",
+        "entityId": "ID сущности",
+        "changes": "Изменения"
+      },
+      "empty": "Журнал пуст",
+      "filterUser": "Пользователь",
+      "filterEntityType": "Тип сущности",
+      "filterAction": "Действие",
+      "filterFrom": "С",
+      "filterTo": "По"
+    },
+    "alerts": {
+      "auditNotPassed": "Аудит не пройден: {{count}} абитуриент(ов) ожидают подтверждения",
+      "incompleteData": "Некорректные заявки: {{count}}",
+      "goToAudit": "Перейти к аудиту",
+      "goToIncomplete": "Показать",
+      "invalidCriteriaGroups": "Некорректные группы оценочных параметров: {{count}}",
+      "goToInvalidGroups": "Показать",
+      "invalidAdmissionCategories": "Некорректные конкурсные списки: {{count}}",
+      "goToInvalidAdmissionCategories": "Показать",
+      "pendingDeletions": "Неподтвержденные удаления абитуриентов: {{count}}",
+      "goToPendingDeletions": "Показать"
+    },
+    "pendingDeletions": {
+      "columns": {
+        "id": "ID",
+        "externalId": "Идентификатор",
+        "name": "ФИО",
+        "requestedBy": "Инициатор",
+        "status": "Статус",
+        "actions": "Действия"
+      },
+      "sectionTitle": "Удалённые абитуриенты",
+      "statusPending": "Не подтверждено",
+      "statusConfirmed": "Подтверждено",
+      "rejectAction": "Отклонить",
+      "restoreAction": "Восстановить",
+      "empty": "Запросов на удаление нет",
+      "confirmTitle": "Вы уверены?",
+      "rejectTitle": "Отменить удаление абитуриента?",
+      "restoreTitle": "Отменить удаление абитуриента?",
+      "confirmText": "Подтвердить удаление абитуриента \"{{name}}\"? Действие можно будет отменить.",
+      "rejectText": "Данные абитуриента \"{{name}}\" будут восстановлены.",
+      "restoreText": "Данные абитуриента \"{{name}}\" будут восстановлены.",
+      "confirmOk": "Подтвердить",
+      "rejectOk": "Отклонить",
+      "restoreOk": "Восстановить",
+      "confirmedSuccess": "Удаление подтверждено",
+      "rejectedSuccess": "Запрос на удаление отклонён"
+    }
+  },
+  "notFound": {
+    "subTitle": "Страница, которую вы ищете, не существует.",
+    "backHome": "На главную"
   }
 }

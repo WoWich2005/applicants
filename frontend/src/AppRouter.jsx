@@ -1,4 +1,5 @@
 import { Navigate, Outlet, Route, Routes } from 'react-router'
+import NotFound from './pages/NotFound'
 import Results from './pages/Results'
 import Applicants from './pages/Applicants'
 import ApplicantEdit from './pages/ApplicantEdit'
@@ -13,6 +14,8 @@ import Departments from './pages/Departments'
 import CompetitionListEdit from './pages/CompetitionListEdit'
 import Login from './pages/Login'
 import Users from './pages/Users'
+import AuditPage from './pages/AuditPage'
+import AuditLogPage from './pages/AuditLogPage'
 import MainContainer from './components/MainContainer'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuth } from './contexts/AuthContext'
@@ -20,6 +23,8 @@ import { useAuth } from './contexts/AuthContext'
 const ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
 const ADMIN_ROLES = ['SuperAdmin']
 const VIEW_ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
+const AUDIT_ROLES = ['SuperAdmin', 'FacultyManager']
+const AUDIT_LOG_ROLES = ['SuperAdmin', 'FacultyManager', 'DataViewer']
 
 function AuthenticatedLayout() {
   const { auth } = useAuth()
@@ -77,7 +82,14 @@ export default function AppRouter() {
           <ProtectedRoute roles={ADMIN_ROLES}><Users /></ProtectedRoute>
         } />
 
-        <Route path="*" element={<Navigate to={ROUTES.RESULTS} replace />} />
+        <Route path={ROUTES.AUDIT} element={
+          <ProtectedRoute roles={AUDIT_ROLES}><AuditPage /></ProtectedRoute>
+        } />
+        <Route path={ROUTES.AUDIT_LOG} element={
+          <ProtectedRoute roles={AUDIT_LOG_ROLES}><AuditLogPage /></ProtectedRoute>
+        } />
+
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   )

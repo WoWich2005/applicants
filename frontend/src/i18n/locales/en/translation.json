@@ -1,6 +1,9 @@
 {
   "common": {
+    "colId": "ID",
     "cancel": "Cancel",
+    "prev": "Back",
+    "next": "Next",
     "close": "Close",
     "delete": "Delete",
     "save": "Save",
@@ -137,7 +140,8 @@
       "tabData": "Specialty Data",
       "tabCompetitionLists": "Competition Lists",
       "notFound": "This specialty does not exist",
-      "serverError": "Server Error"
+      "serverError": "Server Error",
+      "tabHistory": "Change History"
     },
     "form": {
       "nameLabel": "Specialty Name",
@@ -204,7 +208,8 @@
       "tabCriteria": "Evaluation Criteria",
       "notFound": "This evaluation criteria group does not exist",
       "serverError": "Server Error",
-      "fetchError": "Error loading data from server"
+      "fetchError": "Error loading data from server",
+      "tabHistory": "Change History"
     },
     "form": {
       "nameLabel": "Group Name",
@@ -229,7 +234,8 @@
       "updateButton": "Update Criterion",
       "saveError": "Error saving evaluation criterion in group",
       "fetchError": "Failed to load data from server"
-    }
+    },
+    "invalidPriorities": "Criterion priorities are invalid: values must be consecutive starting from 1 with no gaps or duplicates"
   },
   "competitionList": {
     "colName": "Name",
@@ -247,7 +253,8 @@
       "tabCategories": "Admission Categories",
       "notFound": "This competition list does not exist",
       "serverError": "Server Error",
-      "fetchError": "Error loading data from server"
+      "fetchError": "Error loading data from server",
+      "tabHistory": "Change History"
     },
     "form": {
       "nameLabel": "Competition List Name",
@@ -293,12 +300,13 @@
       "updateButton": "Update Category",
       "saveError": "Error saving admission category on server",
       "fetchGroupsError": "Failed to load evaluation criteria groups"
-    }
+    },
+    "invalidPriorities": "Admission category priorities are invalid: values must be consecutive starting from 1 with no gaps or duplicates"
   },
   "applicant": {
     "listTitle": "Applicants List",
     "listHelpText": "Here you can modify applicant data",
-    "colId": "ID",
+    "colId": "Identifier",
     "colName": "Applicant",
     "editTitle": "Edit applicant \"{{name}}\"",
     "deleteText": "Delete applicant \"{{name}}\"?",
@@ -314,15 +322,23 @@
       "fetchError": "Error loading data from server"
     },
     "form": {
-      "idLabel": "ID (passport number, ID card, or any unique value)",
-      "idRequired": "Applicant ID is required",
-      "idMaxLength": "ID must not exceed 255 characters",
+      "idLabel": "Identifier (passport number, ID card, or any unique value)",
+      "idRequired": "Applicant identifier is required",
+      "idMaxLength": "Identifier must not exceed 255 characters",
       "nameLabel": "Applicant Name",
       "nameRequired": "Applicant name is required",
       "notesLabel": "Notes",
       "addButton": "Add Applicant",
       "updateButton": "Update Applicant Data",
-      "saveError": "Error saving applicant data"
+      "saveError": "Error saving applicant data",
+      "deletedConflict": {
+        "title": "Applicant is marked for deletion",
+        "description": "An applicant with this identifier existed in the system but was deleted. You can restore them or cancel.",
+        "restoreButton": "Restore Applicant",
+        "noPermission": "Contact a super admin to restore this applicant.",
+        "restoreSuccess": "Applicant restored successfully",
+        "restoreError": "Error restoring applicant"
+      }
     }
   },
   "applicantAdmissionCategory": {
@@ -426,5 +442,205 @@
       "createButton": "Create",
       "saveError": "Failed to save"
     }
+  },
+  "audit": {
+    "nav": "Audit",
+    "logNav": "Action Log",
+    "tabs": {
+      "applicants": "Applicant Data Audit",
+      "incomplete": "Invalid Applications",
+      "invalidGroups": "Invalid Evaluation Criteria Groups",
+      "invalidAdmissionCategories": "Invalid Competition Lists"
+    },
+    "history": {
+      "title": "Change History",
+      "empty": "No change history available",
+      "columns": {
+        "date": "Date",
+        "user": "User",
+        "entity": "Entity",
+        "action": "Action",
+        "changes": "Changes"
+      }
+    },
+    "actions": {
+      "create": "Created",
+      "update": "Updated",
+      "delete": "Deleted",
+      "validate": "Applicant validation",
+      "invalidate": "Applicant validation revoked",
+      "delete_confirmed": "Applicant deletion confirmed",
+      "delete_rejected": "Applicant deletion cancelled"
+    },
+    "authLog": {
+      "title": "Authorization Log",
+      "columns": {
+        "date": "Date",
+        "userId": "User ID",
+        "username": "User",
+        "event": "Event",
+        "reason": "Reason",
+        "ip": "IP Address",
+        "userAgent": "Browser"
+      },
+      "events": {
+        "login_success": "Login successful",
+        "login_failure": "Login failed",
+        "token_invalid": "Invalid token"
+      },
+      "failureReasons": {
+        "wrong_password": "Wrong password",
+        "user_not_found": "User not found",
+        "inactive": "Account deactivated"
+      }
+    },
+    "validation": {
+      "validate": "Validate",
+      "invalidate": "Revoke validation",
+      "validated": "Validated",
+      "notValidated": "Not validated",
+      "validateTitle": "Confirm Applicant Data",
+      "invalidateTitle": "Revoke Validation",
+      "commentLabel": "Comment",
+      "commentRequired": "Please provide a reason for revoking validation",
+      "confirmValidate": "Confirm",
+      "confirmInvalidate": "Revoke",
+      "changedAfterValidation": "Data was changed after last validation",
+      "blockerMissingCriteria": "Required evaluation criteria not filled",
+      "blockerInvalidPriorities": "Application priorities are invalid",
+      "validateError": "Failed to validate applicant",
+      "invalidateError": "Failed to revoke validation"
+    },
+    "applicantData": {
+      "info": "Applicant Data",
+      "evaluationValues": "Evaluation Criteria",
+      "admissionCategories": "Applications",
+      "historyTab": "Change History",
+      "criteria": "Criterion",
+      "value": "Value",
+      "filled": "Filled",
+      "notFilled": "Not filled",
+      "priority": "Priority",
+      "specialty": "Specialty",
+      "category": "Admission Category"
+    },
+    "incomplete": {
+      "columns": {
+        "externalId": "Identifier",
+        "name": "Name",
+        "issues": "Issues",
+        "action": "Action"
+      },
+      "goToEdit": "Edit",
+      "missingCriteria": "Missing: {{criteria}}",
+      "invalidPriorities": "Invalid application priorities",
+      "empty": "All data is complete"
+    },
+    "invalidGroups": {
+      "columns": {
+        "name": "Evaluation Criteria Group",
+        "action": "Action"
+      },
+      "goToEdit": "Edit",
+      "empty": "No invalid groups found"
+    },
+    "invalidAdmissionCategories": {
+      "columns": {
+        "facultyName": "Faculty",
+        "departmentName": "Department",
+        "specialtyName": "Specialty",
+        "name": "Competition List",
+        "action": "Action"
+      },
+      "goToEdit": "Edit",
+      "empty": "No invalid competition lists found"
+    },
+    "unvalidated": {
+      "sectionTitle": "Applicant Data",
+      "columns": {
+        "externalId": "Identifier",
+        "name": "Name",
+        "status": "Status",
+        "action": "Action"
+      },
+      "filterAll": "All",
+      "filterUnvalidated": "Not confirmed",
+      "filterValidated": "Confirmed",
+      "empty": "No applicants"
+    },
+    "entityTypes": {
+      "applicant": "Applicant",
+      "faculty": "Faculty",
+      "department": "Department",
+      "specialty": "Specialty",
+      "competition_list": "Competition List",
+      "admission_category": "Admission Category",
+      "evaluation_criteria": "Evaluation Criteria",
+      "evaluation_criteria_group": "Evaluation Criteria Group",
+      "evaluation_criteria_group_item": "Evaluation Criteria Group Item",
+      "applicant_evaluation_value": "Applicant Evaluation Value",
+      "applicant_admission_category": "Applicant Application",
+      "user": "User"
+    },
+    "log": {
+      "title": "Action Log",
+      "columns": {
+        "date": "Date",
+        "user": "User",
+        "action": "Action",
+        "entity": "Entity",
+        "entityId": "Entity ID",
+        "changes": "Changes"
+      },
+      "empty": "Log is empty",
+      "filterUser": "User",
+      "filterEntityType": "Entity type",
+      "filterAction": "Action",
+      "filterFrom": "From",
+      "filterTo": "To"
+    },
+    "alerts": {
+      "auditNotPassed": "Audit not passed: {{count}} applicant(s) awaiting confirmation",
+      "incompleteData": "Incorrect applications: {{count}}",
+      "goToAudit": "Go to Audit",
+      "goToIncomplete": "Show",
+      "invalidCriteriaGroups": "Invalid evaluation criteria groups: {{count}}",
+      "goToInvalidGroups": "Show",
+      "invalidAdmissionCategories": "Invalid competition lists: {{count}}",
+      "goToInvalidAdmissionCategories": "Show",
+      "pendingDeletions": "Unconfirmed applicant deletions: {{count}}",
+      "goToPendingDeletions": "Show"
+    },
+    "pendingDeletions": {
+      "columns": {
+        "id": "ID",
+        "externalId": "Identifier",
+        "name": "Full Name",
+        "requestedBy": "Requested By",
+        "status": "Status",
+        "actions": "Actions"
+      },
+      "sectionTitle": "Deleted Applicants",
+      "statusPending": "Not Confirmed",
+      "statusConfirmed": "Confirmed",
+      "rejectAction": "Reject",
+      "restoreAction": "Restore",
+      "empty": "No deletion requests",
+      "confirmTitle": "Are you sure?",
+      "rejectTitle": "Cancel applicant deletion?",
+      "restoreTitle": "Cancel applicant deletion?",
+      "confirmText": "Confirm deletion of applicant \"{{name}}\"? This action can be undone.",
+      "rejectText": "Applicant \"{{name}}\" data will be restored.",
+      "restoreText": "Applicant \"{{name}}\" data will be restored.",
+      "confirmOk": "Confirm",
+      "rejectOk": "Reject",
+      "restoreOk": "Restore",
+      "confirmedSuccess": "Deletion confirmed",
+      "rejectedSuccess": "Deletion request rejected"
+    }
+  },
+  "notFound": {
+    "subTitle": "The page you are looking for does not exist.",
+    "backHome": "Back home"
   }
 }

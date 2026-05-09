@@ -8,7 +8,9 @@ import {
   DatabaseOutlined,
   BookOutlined,
   SlidersOutlined,
-  BankOutlined
+  BankOutlined,
+  AuditOutlined,
+  FileSearchOutlined,
 } from "@ant-design/icons"
 import { ConfigProvider, Menu } from 'antd'
 import styles from './styles.module.scss'
@@ -62,6 +64,13 @@ function MainMenu({ collapsed }) {
         hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.faculties'), ROUTES.FACULTIES, <BankOutlined />),
         createMenuItem(t('nav.departments'), ROUTES.DEPARTMENTS, <BookOutlined />),
         createMenuItem(t('nav.specialties'), ROUTES.SPECIALTIES, <ToolOutlined />)
+      ].filter(Boolean)
+    },
+    (hasRole(['SuperAdmin', 'FacultyManager']) || hasRole(['DataViewer'])) && {
+      type: "group",
+      children: [
+        hasRole(['SuperAdmin', 'FacultyManager']) && createMenuItem(t('audit.nav'), ROUTES.AUDIT, <AuditOutlined />),
+        hasRole(['SuperAdmin', 'FacultyManager', 'DataViewer']) && createMenuItem(t('audit.logNav'), ROUTES.AUDIT_LOG, <FileSearchOutlined />),
       ].filter(Boolean)
     },
     settingsChildren.length > 0 && {

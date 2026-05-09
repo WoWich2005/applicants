@@ -18,4 +18,7 @@ export const ROUTES = {
   COMPETITION_LIST_EDIT: "/competition-list/:listId/edit",
 
   USERS: "/users",
+
+  AUDIT: "/audit",
+  AUDIT_LOG: "/audit-log",
 }
