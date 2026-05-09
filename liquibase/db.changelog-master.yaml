@@ -97,3 +97,80 @@ databaseChangeLog:
         - sqlFile:
             path: sql/0014_add_externalid_to_applicants.sql
             relativeToChangelogFile: true
+  - changeSet:
+      id: "0015-add-audit-log"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0015_add_audit_log.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0016-add-auth-log"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0016_add_auth_log.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0017-add-applicant-validation"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0017_add_applicant_validation.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0018-drop-audit-log-context"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0018_drop_audit_log_context.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0019-add-applicant-soft-delete"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0019_add_applicant_soft_delete.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0020-remove-deletion-request-comments"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0020_remove_deletion_request_comments.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0021-drop-validated-at-from-deletion-requests"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0021_drop_validated_at_from_deletion_requests.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0022-drop-requested-at-and-validated-by-from-deletion-requests"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0022_drop_requested_at_and_validated_by_from_deletion_requests.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0023-drop-validated-by-and-at-from-applicant-validation"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0023_drop_validated_by_and_at_from_applicant_validation.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0024-merge-applicant-validation-into-applicants"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0024_merge_applicant_validation_into_applicants.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0025-drop-role-from-audit-log"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0025_drop_role_from_audit_log.sql
+            relativeToChangelogFile: true
