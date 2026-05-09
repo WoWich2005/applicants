@@ -1,10 +1,11 @@
 import { Button, message, Modal, Space, Typography } from "antd"
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import DeleteModal from "../Modals/DeleteModal"
 import AddButton from "../Buttons/AddButton"
 import DataTable from "../DataTable"
 import { Link } from "react-router"
 import { useTranslation } from "react-i18next"
+import { useServerTable } from "../../hooks/useServerTable"
 
 function CrudTable(props) {
   const { t } = useTranslation()
@@ -23,110 +24,99 @@ function CrudTable(props) {
   const [curDeleteEl, setCurDeleteEl] = useState(/** @type {any} */ (null))
   const [deleteBlockers, setDeleteBlockers] = useState(/** @type {any} */ (null))
 
-  const [dataSource, setDataSource] = useState(/** @type {any[]} */ ([]))
+  // --- Non-server state ---
+  const [localData, setLocalData] = useState(/** @type {any[]} */ ([]))
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const [total, setTotal] = useState(0)
-  const [activeFilters, setActiveFilters] = useState(/** @type {Record<string, any>} */ ({}))
-  const [sortField, setSortField] = useState(/** @type {string | null} */ (null))
-  const [sortOrder, setSortOrder] = useState(/** @type {string | null} */ (null))
+  useEffect(() => {
+    if (!props.serverSidePagination) props.onDataLoaded?.(localData)
+  }, [localData]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (props.serverSidePagination) return
-
     const fetchData = async () => {
       try {
-        const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
-        const [_, response] = await Promise.all([delayPromise, props.getAllAsync()])
-        setDataSource(response.data)
-      } catch (err) {
+        const response = await props.getAllAsync()
+        setLocalData(response.data)
+      } catch {
         messageApi.error(t('common.error.fetchData'))
-        console.log(err)
       } finally {
         setIsDataLoading(false)
       }
     }
-
     fetchData()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  useEffect(() => {
-    if (!props.serverSidePagination) return
+  // --- Server-side state via hook ---
+  const getPagedRef = useRef(props.getPagedAsync)
+  useEffect(() => { getPagedRef.current = props.getPagedAsync }, [props.getPagedAsync])
 
-    const fetchData = async () => {
-      setIsDataLoading(true)
-      try {
-        const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
-        const [_, response] = await Promise.all([
-          delayPromise,
-          props.getPagedAsync({ page, pageSize, filters: activeFilters, sortField, sortOrder })
-        ])
-        setDataSource(response.data.items)
-        setTotal(response.data.total)
-      } catch (err) {
-        messageApi.error(t('common.error.fetchData'))
-        console.log(err)
-      } finally {
-        setIsDataLoading(false)
-      }
-    }
+  const serverFetchAsync = useCallback(
+    (params) => {
+      if (!props.serverSidePagination || !getPagedRef.current) return Promise.resolve({ data: { items: [], total: 0 } })
+      return getPagedRef.current(params)
+    },
+    [props.serverSidePagination]
+  )
 
-    fetchData()
-  }, [page, pageSize, activeFilters, sortField, sortOrder])
+  const {
+    data: serverData,
+    loading: serverLoading,
+    setData: setServerData,
+    setTotal: setServerTotal,
+    page: serverPage,
+    setPage: setServerPage,
+    filters: activeFilters,
+    setFilters: setServerFilters,
+    pagination: paginationConfig,
+    onTableChange,
+  } = useServerTable(props.serverSidePagination ? serverFetchAsync : null)
 
-  /**
-   * @param {Record<string, any[] | null>} filters
-   * @param {any} sorter
-   */
-  const onTableChange = (filters, sorter) => {
-    if (!props.serverSidePagination) return
-    setActiveFilters(filters ?? {})
-    setSortField(sorter?.field ?? null)
-    setSortOrder(sorter?.order ?? null)
-    setPage(1)
-  }
+  const dataSource = props.serverSidePagination ? serverData : localData
+  const setDataSource = props.serverSidePagination ? setServerData : setLocalData
+  const isServerLoading = props.serverSidePagination ? serverLoading : isDataLoading
+
+  // ---
 
   const onCreateSuccess = (/** @type {any} */ createdEl) => {
     if (props.serverSidePagination) {
-      setTotal(prev => prev + 1)
+      setServerFilters(f => ({ ...f }))
+    } else {
+      setDataSource(prev => [...prev, createdEl])
     }
-    setDataSource([...dataSource, createdEl])
     setIsCreateElModalOpen(false)
+    props.onDataChange?.()
   }
 
-  const onUpdateSuccess = (updatedEl) => {
-    setDataSource(prev =>
-      prev.map(item => item.id === updatedEl.id ? updatedEl : item)
-    )
-
+  const onUpdateSuccess = (/** @type {any} */ updatedEl) => {
+    if (props.serverSidePagination) {
+      setServerFilters(f => ({ ...f }))
+    } else {
+      setDataSource(prev =>
+        prev.map(item => item.id === updatedEl.id ? updatedEl : item)
+      )
+    }
     setIsEditElModalOpen(false)
+    props.onDataChange?.()
   }
 
   const handleDeleteEl = async () => {
     setIsDeleteLoading(true)
-
     try {
-      const delayPromise = new Promise(resolve => setTimeout(resolve, 500))
       const deletedId = curDeleteEl?.id
-      await Promise.all([delayPromise, props.deleteAsync(deletedId)])
-
+      await props.deleteAsync(deletedId)
       setIsDeleteElModalOpen(false)
-
+      props.onDataChange?.()
+      const remaining = dataSource.length - 1
+      setDataSource(prev => prev.filter(val => val.id != deletedId))
       if (props.serverSidePagination) {
-        const remainingCount = dataSource.length - 1
-        setDataSource(dataSource.filter(val => val.id != deletedId))
-        setTotal(prev => prev - 1)
-        if (remainingCount === 0 && page > 1) {
-          setPage(prev => prev - 1)
+        setServerTotal(prev => prev - 1)
+        if (remaining === 0 && serverPage > 1) {
+          setServerPage(prev => prev - 1)
         }
-      } else {
-        setDataSource(dataSource.filter(val => val.id != deletedId))
       }
     } catch (err) {
       const serverMessage = /** @type {any} */ (err)?.response?.data?.message
       messageApi.error(serverMessage ?? t('common.error.deleteServer'))
-      console.log(err)
     } finally {
       setIsDeleteLoading(false)
     }
@@ -231,19 +221,6 @@ function CrudTable(props) {
 
   const columns = [...enrichedColumns, ...actionColumn]
 
-  /** @type {import('antd').TablePaginationConfig | undefined} */
-  const paginationConfig = props.serverSidePagination ? {
-    current: page,
-    pageSize: pageSize,
-    total: total,
-    onChange: (newPage, newPageSize) => {
-      setPage(newPage)
-      setPageSize(newPageSize)
-    },
-    showSizeChanger: true,
-    showTotal: (total) => t('common.total', { total }),
-  } : undefined
-
   return (
     <>
       {contextHolder}
@@ -317,10 +294,10 @@ function CrudTable(props) {
         dataSource={dataSource}
         rowKey="id"
         withSearch={true}
-        loading={isDataLoading}
+        loading={isServerLoading}
         columns={columns}
         serverSidePagination={props.serverSidePagination}
-        pagination={paginationConfig}
+        pagination={props.serverSidePagination ? paginationConfig : undefined}
         onTableChange={onTableChange}
         onRow={props.onRow}
       />

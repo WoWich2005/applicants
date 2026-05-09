@@ -113,6 +113,7 @@ function DataTable(props) {
       loading={props.loading ?? false}
       pagination={props.pagination}
       onRow={props.onRow}
+      scroll={{ x: 'max-content' }}
       onChange={(_, filters, sorter, { action }) => {
         if (action === 'filter' || action === 'sort') {
           props.onTableChange?.(filters, sorter)

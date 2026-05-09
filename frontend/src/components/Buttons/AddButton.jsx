@@ -19,6 +19,7 @@ function AddButton(props) {
         title={props.title}
         footer={null}
         onCancel={() => props.setIsModalOpen(false)}
+        destroyOnClose
       >
         {props.modalContent}
       </Modal>
