@@ -254,10 +254,10 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       setSpecialties([])
       setCompetitionLists([])
       setCategories([])
-    } catch (err) {
-      if ('response' in err && err.response.status === 400) {
-        messageApi.error(err.response.data)
-      } else if ('response' in err && err.response.status === 403) {
+    } catch (/** @type {any} */ err) {
+      if (err?.response?.status === 400) {
+        messageApi.error(err.response?.data?.message ?? t('applicantAdmissionCategory.form.saveError'))
+      } else if (err?.response?.status === 403) {
         messageApi.error(t('applicantAdmissionCategory.form.accessError'))
       } else {
         messageApi.error(t('applicantAdmissionCategory.form.saveError'))

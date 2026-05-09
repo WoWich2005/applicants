@@ -123,13 +123,8 @@ function SpecialtyForm(/** @type {any} */ props) {
       setSelectedFacultyId(managerFacultyId ?? null)
       if (!managerFacultyId) setDepartments([])
     } catch (err) {
-      const serverMessage = err?.response?.data
-      messageApi.error(
-        typeof serverMessage === 'string' && serverMessage.length > 0
-          ? serverMessage
-          : t('specialty.form.saveError')
-      )
-      console.log(err)
+      const serverMessage = err?.response?.data?.message
+      messageApi.error(serverMessage ?? t('specialty.form.saveError'))
     } finally {
       setIsLoading(false)
     }

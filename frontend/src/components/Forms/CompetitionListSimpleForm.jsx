@@ -35,13 +35,8 @@ function CompetitionListSimpleForm(/** @type {any} */ props) {
 
       form.resetFields()
     } catch (err) {
-      const serverMessage = err?.response?.data
-      messageApi.error(
-        typeof serverMessage === 'string' && serverMessage.length > 0
-          ? serverMessage
-          : t('competitionList.form.saveError')
-      )
-      console.log(err)
+      const serverMessage = err?.response?.data?.message
+      messageApi.error(serverMessage ?? t('competitionList.form.saveError'))
     } finally {
       setIsLoading(false)
     }

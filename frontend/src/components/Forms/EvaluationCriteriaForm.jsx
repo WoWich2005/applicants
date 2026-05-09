@@ -56,13 +56,8 @@ function EvaluationCriteriaForm(props) {
 
       form.resetFields()
     } catch (err) {
-      const serverMessage = err?.response?.data
-      messageApi.error(
-        typeof serverMessage === 'string' && serverMessage.length > 0
-          ? serverMessage
-          : t('evaluationCriteria.form.saveError')
-      )
-      console.log(err)
+      const serverMessage = err?.response?.data?.message
+      messageApi.error(serverMessage ?? t('evaluationCriteria.form.saveError'))
     } finally {
       setIsLoading(false)
     }

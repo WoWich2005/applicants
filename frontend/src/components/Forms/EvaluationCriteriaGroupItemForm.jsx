@@ -61,8 +61,8 @@ function EvaluationCriteriaGroupItemForm(props) {
 
       form.resetFields()
     } catch (err) {
-      messageApi.error(t('evaluationCriteriaGroupItem.form.saveError'))
-      console.log(err)
+      const serverMessage = /** @type {any} */ (err)?.response?.data?.message
+      messageApi.error(serverMessage ?? t('evaluationCriteriaGroupItem.form.saveError'))
     } finally {
       setIsLoading(false)
     }

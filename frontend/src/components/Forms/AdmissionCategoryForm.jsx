@@ -53,12 +53,8 @@ function AdmissionCategoryForm(props) {
 
       form.resetFields()
     } catch (err) {
-      const serverMessage = err?.response?.data
-      messageApi.error(
-        typeof serverMessage === 'string' && serverMessage.length > 0
-          ? serverMessage
-          : t('admissionCategory.form.saveError')
-      )
+      const serverMessage = err?.response?.data?.message
+      messageApi.error(serverMessage ?? t('admissionCategory.form.saveError'))
     } finally {
       setIsLoading(false)
     }

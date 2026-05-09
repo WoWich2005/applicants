@@ -34,13 +34,8 @@ function FacultyForm(props) {
 
       form.resetFields()
     } catch (err) {
-      const serverMessage = err?.response?.data
-      messageApi.error(
-        typeof serverMessage === 'string' && serverMessage.length > 0
-          ? serverMessage
-          : t('faculty.form.saveError')
-      )
-      console.log(err)
+      const serverMessage = err?.response?.data?.message
+      messageApi.error(serverMessage ?? t('faculty.form.saveError'))
     } finally {
       setIsLoading(false)
     }
