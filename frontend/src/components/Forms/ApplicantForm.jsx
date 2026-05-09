@@ -1,18 +1,24 @@
-import { Button, Form, Input, message, Space } from "antd"
+import { Button, Form, Input, message, Space, Typography } from "antd"
 import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { applicantsApi } from "../../api/applicantsApi"
+import { auditApi } from "../../api/auditApi"
 import { useTranslation } from "react-i18next"
+import { useAuth } from "../../contexts/AuthContext"
 
 const { TextArea } = Input
 
 function ApplicantForm(props) {
   const { t } = useTranslation()
+  const { auth } = useAuth()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
+  const [deletedConflict, setDeletedConflict] = useState(null)
+  const [isRestoring, setIsRestoring] = useState(false)
 
   const api = applicantsApi
+  const isSuperAdmin = auth?.role === "SuperAdmin"
 
   const onFinish = async (formData) => {
     setIsLoading(true)
@@ -36,17 +42,89 @@ function ApplicantForm(props) {
 
       form.resetFields()
     } catch (err) {
-      const serverMessage = err?.response?.data?.message
-      messageApi.error(serverMessage ?? t('applicant.form.saveError'))
-      console.log(err)
+      const data = err?.response?.data
+      if (err?.response?.status === 409 && data?.isDeleted && data?.deletedApplicant) {
+        setDeletedConflict(data.deletedApplicant)
+      } else {
+        messageApi.error(data?.message ?? t('applicant.form.saveError'))
+      }
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleRestore = async () => {
+    setIsRestoring(true)
+    try {
+      await auditApi.rejectDeletion(deletedConflict.id)
+      const restored = (await api.getById(deletedConflict.id)).data
+      messageApi.success(t('applicant.form.deletedConflict.restoreSuccess'))
+      setDeletedConflict(null)
+      form.resetFields()
+      props.handleRequestResult && props.handleRequestResult(restored)
+    } catch {
+      messageApi.error(t('applicant.form.deletedConflict.restoreError'))
+    } finally {
+      setIsRestoring(false)
+    }
+  }
+
+  const handleExternalIdChange = () => {
+    if (deletedConflict) setDeletedConflict(null)
+  }
+
   useEffect(() => {
     form.setFieldsValue(props.initialValues)
   }, [props.initialValues, form])
+
+  if (deletedConflict) {
+    return (
+      <>
+        {contextHolder}
+        <Form layout="vertical" className={styles.form}>
+          <Typography.Text style={{ display: 'block', marginBottom: 16 }}>
+            {t('applicant.form.deletedConflict.description')}
+          </Typography.Text>
+          <div className={styles.formRow}>
+            <div className={styles.formColumn}>
+              <Form.Item label={t('applicant.form.idLabel')}>
+                <Input readOnly value={deletedConflict.externalId} />
+              </Form.Item>
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formColumn}>
+              <Form.Item label={t('applicant.form.nameLabel')}>
+                <Input readOnly value={deletedConflict.name} />
+              </Form.Item>
+            </div>
+          </div>
+          <div className={styles.formRow}>
+            <div className={styles.formColumn}>
+              <Form.Item label={t('applicant.form.notesLabel')}>
+                <TextArea rows={4} readOnly value={deletedConflict.notes ?? ''} />
+              </Form.Item>
+            </div>
+          </div>
+          {!isSuperAdmin && (
+            <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+              {t('applicant.form.deletedConflict.noPermission')}
+            </Typography.Text>
+          )}
+          <div className={styles.formRow}>
+            <Space>
+              {isSuperAdmin && (
+                <Button type="primary" onClick={handleRestore} loading={isRestoring}>
+                  {t('applicant.form.deletedConflict.restoreButton')}
+                </Button>
+              )}
+              {props.buttons}
+            </Space>
+          </div>
+        </Form>
+      </>
+    )
+  }
 
   return (
     <>
@@ -58,7 +136,6 @@ function ApplicantForm(props) {
         initialValues={props.initialValues}
         onFinish={onFinish}
         autoComplete="off"
-        disabled={!!props.readOnly}
       >
         <div className={styles.formRow}>
           <div className={styles.formColumn}>
@@ -76,7 +153,7 @@ function ApplicantForm(props) {
                 }
               ]}
             >
-              <Input />
+              <Input readOnly={!!props.readOnly} onChange={handleExternalIdChange} />
             </Form.Item>
           </div>
         </div>
@@ -92,7 +169,7 @@ function ApplicantForm(props) {
                 }
               ]}
             >
-              <Input />
+              <Input readOnly={!!props.readOnly} />
             </Form.Item>
           </div>
         </div>
@@ -102,7 +179,7 @@ function ApplicantForm(props) {
               label={t('applicant.form.notesLabel')}
               name="notes"
             >
-              <TextArea rows={4} />
+              <TextArea rows={4} readOnly={!!props.readOnly} />
             </Form.Item>
           </div>
         </div>
