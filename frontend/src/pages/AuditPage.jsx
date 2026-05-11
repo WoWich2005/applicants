@@ -9,11 +9,11 @@ import { auditApi } from '../api/auditApi'
 import { ROUTES } from '../constants/routes'
 import { useTranslation } from 'react-i18next'
 import { useServerTable } from '../hooks/useServerTable'
-import { useAuth } from '../contexts/AuthContext'
+import { usePermissions } from '../hooks/usePermissions'
 
 function ApplicantsAuditTab() {
   const { t } = useTranslation()
-  const { auth } = useAuth()
+  const { canWriteAudit } = usePermissions()
   const [modalOpen, setModalOpen] = useState(false)
   const [selectedApplicant, setSelectedApplicant] = useState(null)
 
@@ -62,7 +62,7 @@ function ApplicantsAuditTab() {
         ? <Tag color="success">{t('audit.validation.validated')}</Tag>
         : <Tag color="error">{t('audit.validation.notValidated')}</Tag>,
     },
-    {
+    ...(canWriteAudit ? [{
       title: t('audit.unvalidated.columns.action'),
       key: 'action',
       width: 180,
@@ -71,7 +71,7 @@ function ApplicantsAuditTab() {
           {row.validated ? t('audit.validation.invalidate') : t('audit.validation.validate')}
         </Button>
       ),
-    },
+    }] : []),
   ]
 
   return (
@@ -99,14 +99,12 @@ function ApplicantsAuditTab() {
         />
       )}
 
-      {auth?.role === 'SuperAdmin' && (
-        <>
-          <Divider orientation="left">
-            <Typography.Text strong>{t('audit.pendingDeletions.sectionTitle')}</Typography.Text>
-          </Divider>
-          <PendingDeletionsSection onApplicantRestored={() => setFilters(f => ({ ...f }))} />
-        </>
-      )}
+      <>
+        <Divider orientation="left">
+          <Typography.Text strong>{t('audit.pendingDeletions.sectionTitle')}</Typography.Text>
+        </Divider>
+        <PendingDeletionsSection onApplicantRestored={() => setFilters(f => ({ ...f }))} />
+      </>
     </>
   )
 }
@@ -278,6 +276,7 @@ function InvalidAdmissionCategoriesTab() {
 
 function PendingDeletionsSection({ onApplicantRestored }) {
   const { t } = useTranslation()
+  const { canWriteAudit } = usePermissions()
   const [messageApi, contextHolder] = message.useMessage()
   const [actionModal, setActionModal] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -358,7 +357,7 @@ function PendingDeletionsSection({ onApplicantRestored }) {
         ? <Tag color="success">{t('audit.pendingDeletions.statusConfirmed')}</Tag>
         : <Tag color="error">{t('audit.pendingDeletions.statusPending')}</Tag>,
     },
-    {
+    ...(canWriteAudit ? [{
       title: t('audit.pendingDeletions.columns.actions'),
       key: 'actions',
       width: 120,
@@ -383,7 +382,7 @@ function PendingDeletionsSection({ onApplicantRestored }) {
           />
         </span>
       ),
-    },
+    }] : []),
   ]
 
   const isConfirm = actionModal?.type === 'confirm'

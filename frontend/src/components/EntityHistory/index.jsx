@@ -64,7 +64,7 @@ function EntityHistory({ entityType, entityId }) {
   const [selectedChanges, setSelectedChanges] = useState(/** @type {string | null} */ (null))
 
   const fetchAsync = useCallback(
-    (/** @type {{ page: number, pageSize: number, filters: Record<string, any[]> }} */ { page, pageSize, filters }) => {
+    (/** @type {{ page: number, pageSize: number, filters: Record<string, any[]>, sortField: string|null, sortOrder: string|null }} */ { page, pageSize, filters, sortField, sortOrder }) => {
       if (!entityId) return Promise.resolve({ data: { items: [], total: 0 } })
       const dateRaw = filters?.createdAt?.[0]
       const parsed = dateRaw ? JSON.parse(dateRaw) : null
@@ -74,6 +74,7 @@ function EntityHistory({ entityType, entityId }) {
         logEntityType: filters?.entityType?.[0],
         from: parsed?.[0],
         to: parsed?.[1],
+        sortOrder: sortField === 'createdAt' ? sortOrder : null,
       })
     },
     [entityType, entityId]
@@ -106,6 +107,8 @@ function EntityHistory({ entityType, entityId }) {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 160,
+      sorter: true,
+      defaultSortOrder: 'descend',
       filterDropdown: (props) => <DateRangeFilter {...props} t={t} />,
       filterIcon: (filtered) => <CalendarOutlined style={{ color: filtered ? '#1677ff' : undefined }} />,
       render: (/** @type {any} */ v) => v ? dayjs(v).format('DD.MM.YYYY HH:mm') : '—',

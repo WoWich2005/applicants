@@ -10,13 +10,13 @@ import useMessage from 'antd/es/message/useMessage'
 import SpecialtyForm from '../components/Forms/SpecialtyForm'
 import { generatePath } from 'react-router'
 import { ROUTES } from '../constants/routes'
-import { useAuth } from '../contexts/AuthContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 
 function Specialties() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
   const [messageApi, contextHolder] = useMessage()
   const [departments, setDepartments] = useState(/** @type {Record<number, any>} */ ({}))
   const [faculties, setFaculties] = useState(/** @type {Record<number, any>} */ ({}))

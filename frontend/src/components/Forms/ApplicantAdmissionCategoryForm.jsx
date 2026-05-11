@@ -7,7 +7,6 @@ import { specialtiesApi } from "../../api/specialtiesApi"
 import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
 import { competitionListsApi } from "../../api/competitionListsApi"
-import { useAuth } from "../../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
 
 function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
@@ -15,12 +14,6 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
-
-  const { auth } = useAuth()
-  const isOperator = auth?.role === 'AdmissionsOperator'
-  const isFacultyManager = auth?.role === 'FacultyManager'
-  const managerFacultyId = isFacultyManager ? auth?.facultyId : null
-  const allowedSpecialtyIds = isOperator ? (auth?.specialtyIds ?? []) : null
 
   const [faculties, setFaculties] = useState(/** @type {Array<{id: number, name: string}>} */ ([]))
   const [isFacultiesLoading, setIsFacultiesLoading] = useState(true)
@@ -42,10 +35,6 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState(/** @type {number | null} */ (null))
   const [selectedCompetitionListId, setSelectedCompetitionListId] = useState(/** @type {number | null} */ (null))
 
-  // For AdmissionsOperator: maps allowed specialty/department/faculty IDs
-  const [allowedSets, setAllowedSets] = useState(/** @type {{specialtyIds: Set<number>, departmentIds: Set<number>, facultyIds: Set<number>} | null} */ (null))
-  const [isAllowedSetsLoading, setIsAllowedSetsLoading] = useState(!!(isOperator && allowedSpecialtyIds?.length))
-
   useEffect(() => {
     const fetchFaculties = async () => {
       try {
@@ -60,48 +49,6 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
 
     fetchFaculties()
   }, [])
-
-  useEffect(() => {
-    if (!isOperator || !allowedSpecialtyIds?.length) {
-      setIsAllowedSetsLoading(false)
-      return
-    }
-
-    const buildAllowedSets = async () => {
-      try {
-        const specResponses = await Promise.all(allowedSpecialtyIds.map(id => specialtiesApi.getById(id)))
-        const specs = specResponses.map(r => r.data)
-
-        const uniqueDeptIds = [...new Set(specs.map(s => s.departmentId))]
-        const deptResponses = await Promise.all(uniqueDeptIds.map(id => departmentsApi.getById(id)))
-        const depts = deptResponses.map(r => r.data)
-
-        setAllowedSets({
-          specialtyIds: new Set(allowedSpecialtyIds),
-          departmentIds: new Set(uniqueDeptIds),
-          facultyIds: new Set(depts.map(d => d.facultyId)),
-        })
-      } catch {
-        messageApi.error(t('applicantAdmissionCategory.form.fetchAllowedSetsError'))
-      } finally {
-        setIsAllowedSetsLoading(false)
-      }
-    }
-
-    buildAllowedSets()
-  }, [])
-
-  // FacultyManager: auto-select their faculty and load departments when creating
-  useEffect(() => {
-    if (isFacultiesLoading || !managerFacultyId || props.initialValues?.admissionCategoryId) return
-
-    setSelectedFacultyId(managerFacultyId)
-    setIsDepartmentsLoading(true)
-    departmentsApi.getByFacultyId(managerFacultyId)
-      .then(r => setDepartments(r.data))
-      .catch(() => messageApi.error(t('applicantAdmissionCategory.form.fetchDepartmentsError')))
-      .finally(() => setIsDepartmentsLoading(false))
-  }, [isFacultiesLoading])
 
   useEffect(() => {
     if (!props.initialValues?.admissionCategoryId || isFacultiesLoading) return
@@ -159,8 +106,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
     try {
       const delayPromise = new Promise(resolve => setTimeout(resolve, 300))
       const [_, response] = await Promise.all([delayPromise, departmentsApi.getByFacultyId(facultyId)])
-      const loaded = response.data
-      setDepartments(allowedSets ? loaded.filter(d => allowedSets.departmentIds.has(d.id)) : loaded)
+      setDepartments(response.data)
     } catch {
       messageApi.error(t('applicantAdmissionCategory.form.fetchDepartmentsError'))
     } finally {
@@ -181,8 +127,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
     try {
       const delayPromise = new Promise(resolve => setTimeout(resolve, 300))
       const [_, response] = await Promise.all([delayPromise, specialtiesApi.getByDepartmentId(departmentId)])
-      const loaded = response.data
-      setSpecialties(allowedSets ? loaded.filter(s => allowedSets.specialtyIds.has(s.id)) : loaded)
+      setSpecialties(response.data)
     } catch {
       messageApi.error(t('applicantAdmissionCategory.form.fetchSpecialtiesError'))
     } finally {
@@ -246,11 +191,11 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
       }
 
       form.resetFields()
-      setSelectedFacultyId(managerFacultyId ?? null)
+      setSelectedFacultyId(null)
       setSelectedDepartmentId(null)
       setSelectedSpecialtyId(null)
       setSelectedCompetitionListId(null)
-      if (!managerFacultyId) setDepartments([])
+      setDepartments([])
       setSpecialties([])
       setCompetitionLists([])
       setCategories([])
@@ -267,13 +212,7 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
     }
   }
 
-  const visibleFaculties = managerFacultyId
-    ? faculties.filter(f => f.id === managerFacultyId)
-    : allowedSets
-      ? faculties.filter(f => allowedSets.facultyIds.has(f.id))
-      : faculties
-
-  if (isFacultiesLoading || isAllowedSetsLoading) {
+  if (isFacultiesLoading) {
     return <Skeleton paragraph={{ rows: 6 }} />
   }
 
@@ -296,9 +235,9 @@ function ApplicantAdmissionCategoryForm(/** @type {any} */ props) {
                 value={selectedFacultyId}
                 onChange={handleFacultyChange}
                 placeholder={t('applicantAdmissionCategory.form.facultyPlaceholder')}
-                disabled={isFacultyManager || !!props.readOnly}
+                disabled={!!props.readOnly}
               >
-                {visibleFaculties.map(faculty => (
+                {faculties.map(faculty => (
                   <Select.Option value={faculty.id} key={faculty.id}>
                     {faculty.name}
                   </Select.Option>

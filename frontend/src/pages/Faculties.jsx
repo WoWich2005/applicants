@@ -4,13 +4,13 @@ import CrudTable from '../components/CrudTable'
 import FacultyForm from '../components/Forms/FacultyForm'
 import { facultiesApi } from '../api/facultyApi'
 import { departmentsApi } from '../api/departmentsApi'
-import { useAuth } from '../contexts/AuthContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 
 function Faculties() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
 
   const getDeleteBlockers = async (/** @type {any} */ faculty) => {
     const response = await departmentsApi.getByFacultyId(faculty.id)

@@ -4,13 +4,13 @@ import { useEffect, useState } from "react"
 import { applicantsApi } from "../../api/applicantsApi"
 import { auditApi } from "../../api/auditApi"
 import { useTranslation } from "react-i18next"
-import { useAuth } from "../../contexts/AuthContext"
+import { usePermissions } from "../../hooks/usePermissions"
 
 const { TextArea } = Input
 
 function ApplicantForm(props) {
   const { t } = useTranslation()
-  const { auth } = useAuth()
+  const { canWriteAudit } = usePermissions()
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
@@ -18,7 +18,6 @@ function ApplicantForm(props) {
   const [isRestoring, setIsRestoring] = useState(false)
 
   const api = applicantsApi
-  const isSuperAdmin = auth?.role === "SuperAdmin"
 
   const onFinish = async (formData) => {
     setIsLoading(true)
@@ -106,14 +105,14 @@ function ApplicantForm(props) {
               </Form.Item>
             </div>
           </div>
-          {!isSuperAdmin && (
+          {!canWriteAudit && (
             <Typography.Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
               {t('applicant.form.deletedConflict.noPermission')}
             </Typography.Text>
           )}
           <div className={styles.formRow}>
             <Space>
-              {isSuperAdmin && (
+              {canWriteAudit && (
                 <Button type="primary" onClick={handleRestore} loading={isRestoring}>
                   {t('applicant.form.deletedConflict.restoreButton')}
                 </Button>

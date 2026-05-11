@@ -5,7 +5,7 @@ import { ROUTES } from "../constants/routes"
 import { useCallback, useEffect, useState } from "react"
 import ApplicantForm from "../components/Forms/ApplicantForm"
 import { applicantsApi } from "../api/applicantsApi"
-import { useAuth } from "../contexts/AuthContext"
+import { usePermissions } from "../hooks/usePermissions"
 import CrudTable from "../components/CrudTable"
 import useMessage from "antd/es/message/useMessage"
 import { applicantAdmissionCategoriesApi } from "../api/applicantAdmissionCategoriesApi"
@@ -17,9 +17,9 @@ import { auditApi } from "../api/auditApi"
 import EntityHistory from "../components/EntityHistory"
 
 function ApplicantEdit() {
-  const { auth } = useAuth()
+  const { canWriteApplicants } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteApplicants
   const [messageApi, contextHolder] = useMessage()
 
   const [searchParams, setSearchParams] = useSearchParams()

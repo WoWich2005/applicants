@@ -10,13 +10,13 @@ import EvaluationCriteriaGroupItemForm from "../components/Forms/EvaluationCrite
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { evaluationCriteriaGroupItemsApi } from "../api/evaluationCriteriaGroupItemsApi"
 import EntityHistory from "../components/EntityHistory"
-import { useAuth } from "../contexts/AuthContext"
+import { usePermissions } from "../hooks/usePermissions"
 import { useTranslation } from "react-i18next"
 
 function EvaluationCriteriaGroupEdit() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
   const [messageApi, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
   const { groupId } = useParams()

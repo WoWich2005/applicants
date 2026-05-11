@@ -13,7 +13,7 @@ import { useTheme } from '../../contexts/ThemeContext'
 import { useLanguage } from '../../contexts/LanguageContext'
 import { useTranslation } from 'react-i18next'
 
-const APPLICANT_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator']
+const APPLICANT_ROLES = ['SuperAdmin', 'DataAdministrator', 'Auditor', 'AdmissionsOperator']
 
 function ContentHeader() {
   let navigate = useNavigate()

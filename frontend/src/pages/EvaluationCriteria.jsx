@@ -3,13 +3,13 @@ import Title from '../components/Title'
 import CrudTable from '../components/CrudTable'
 import EvaluationCriteriaForm from '../components/Forms/EvaluationCriteriaForm'
 import { evaluationCriteriaApi } from '../api/evaluationCriteriaApi'
-import { useAuth } from '../contexts/AuthContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 
 function EvaluationCriteria() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
 
   const getDeleteBlockers = async (/** @type {any} */ criteria) => {
     const response = await evaluationCriteriaApi.getDeleteCheck(criteria.id)

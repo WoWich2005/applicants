@@ -2,14 +2,14 @@
 import { instance } from "."
 
 export const auditApi = {
-  getEntityHistory: (entityType, entityId, page = 1, pageSize = 10, { username, action, logEntityType, from, to } = {}) =>
-    instance.get("/audit/entity-history", { params: { entityType, entityId, page, pageSize, username, action, logEntityType, from, to } }),
+  getEntityHistory: (entityType, entityId, page = 1, pageSize = 10, { username, action, logEntityType, from, to, sortOrder } = {}) =>
+    instance.get("/audit/entity-history", { params: { entityType, entityId, page, pageSize, username, action, logEntityType, from, to, sortOrder } }),
 
-  getAuditLog: ({ page = 1, pageSize = 20, filters, from, to } = {}) =>
-    instance.get("/audit/log", { params: { page, pageSize, username: filters?.username?.[0], entityType: filters?.entityType?.[0], action: filters?.action?.[0], entityId: filters?.entityId?.[0], from, to } }),
+  getAuditLog: ({ page = 1, pageSize = 20, filters, from, to, sortOrder } = {}) =>
+    instance.get("/audit/log", { params: { page, pageSize, username: filters?.username?.[0], entityType: filters?.entityType?.[0], action: filters?.action?.[0], entityId: filters?.entityId?.[0], from, to, sortOrder } }),
 
-  getAuthLog: ({ page = 1, pageSize = 20, filters, from, to } = {}) =>
-    instance.get("/audit/auth-log", { params: { page, pageSize, userId: filters?.userId?.[0], username: filters?.username?.[0], eventType: filters?.eventType?.[0], ipAddress: filters?.ipAddress?.[0], failureReason: filters?.failureReason?.[0], userAgent: filters?.userAgent?.[0], from, to } }),
+  getAuthLog: ({ page = 1, pageSize = 20, filters, from, to, sortOrder } = {}) =>
+    instance.get("/audit/auth-log", { params: { page, pageSize, userId: filters?.userId?.[0], username: filters?.username?.[0], eventType: filters?.eventType?.[0], ipAddress: filters?.ipAddress?.[0], failureReason: filters?.failureReason?.[0], userAgent: filters?.userAgent?.[0], from, to, sortOrder } }),
 
   getValidationStatus: (applicantId) =>
     instance.get(`/audit/validation/${applicantId}`),

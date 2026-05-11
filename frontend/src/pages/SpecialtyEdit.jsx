@@ -11,13 +11,13 @@ import CompetitionListSimpleForm from "../components/Forms/CompetitionListSimple
 import CrudTable from "../components/CrudTable"
 import EntityHistory from "../components/EntityHistory"
 import { ROUTES } from "../constants/routes"
-import { useAuth } from "../contexts/AuthContext"
+import { usePermissions } from "../hooks/usePermissions"
 import { useTranslation } from "react-i18next"
 
 function SpecialtyEdit() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
   const [, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
   const { specialtyId } = useParams()

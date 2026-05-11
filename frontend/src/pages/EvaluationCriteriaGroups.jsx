@@ -5,13 +5,13 @@ import CrudTable from '../components/CrudTable'
 import EvaluationCriteriaGroupForm from '../components/Forms/EvaluationCriteriaGroupForm'
 import { ROUTES } from "../constants/routes"
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
-import { useAuth } from '../contexts/AuthContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 
 function EvaluationCriteriaGroups() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
 
   const getDeleteBlockers = async (/** @type {any} */ group) => {
     const response = await evaluationCriteriaGroupsApi.getDeleteCheck(group.id)

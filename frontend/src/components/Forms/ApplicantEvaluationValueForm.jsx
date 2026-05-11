@@ -58,11 +58,8 @@ function ApplicantEvaluationValueForm(props) {
 
       form.resetFields()
     } catch (err) {
-      if ('response' in err && err.response.status === 400) {
-        messageApi.error(err.response.data)
-      } else {
-        messageApi.error(t('applicantEvaluationValue.form.saveError'))
-      }
+      const serverMessage = err?.response?.data?.message
+      messageApi.error(serverMessage ?? t('applicantEvaluationValue.form.saveError'))
     } finally {
       setIsLoading(false)
     }

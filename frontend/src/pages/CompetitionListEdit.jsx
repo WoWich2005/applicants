@@ -13,13 +13,13 @@ import { applicantAdmissionCategoriesApi } from "../api/applicantAdmissionCatego
 import { evaluationCriteriaGroupsApi } from "../api/evaluationCriteriaGroupsApi"
 import { specialtiesApi } from "../api/specialtiesApi"
 import EntityHistory from "../components/EntityHistory"
-import { useAuth } from "../contexts/AuthContext"
+import { usePermissions } from "../hooks/usePermissions"
 import { useTranslation } from "react-i18next"
 
 function CompetitionListEdit() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
   const [messageApi, contextHolder] = useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
   const { listId } = useParams()

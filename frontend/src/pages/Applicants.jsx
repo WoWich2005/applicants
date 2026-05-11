@@ -4,13 +4,13 @@ import ApplicantForm from "../components/Forms/ApplicantForm"
 import { applicantsApi } from "../api/applicantsApi"
 import { generatePath } from "react-router"
 import { ROUTES } from "../constants/routes"
-import { useAuth } from "../contexts/AuthContext"
+import { usePermissions } from "../hooks/usePermissions"
 import { useTranslation } from "react-i18next"
 
 function Applicants() {
-  const { auth } = useAuth()
+  const { canWriteApplicants } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteApplicants
 
   return (
     <>

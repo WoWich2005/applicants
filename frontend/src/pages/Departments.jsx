@@ -7,13 +7,13 @@ import { facultiesApi } from '../api/facultyApi'
 import { specialtiesApi } from '../api/specialtiesApi'
 import { useEffect, useState } from 'react'
 import useMessage from 'antd/es/message/useMessage'
-import { useAuth } from '../contexts/AuthContext'
+import { usePermissions } from '../hooks/usePermissions'
 import { useTranslation } from 'react-i18next'
 
 function Departments() {
-  const { auth } = useAuth()
+  const { canWriteStructure } = usePermissions()
   const { t } = useTranslation()
-  const readOnly = auth?.role === 'DataViewer'
+  const readOnly = !canWriteStructure
   const [messageApi, contextHolder] = useMessage()
   const [faculties, setFaculties] = useState({})
 

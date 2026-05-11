@@ -19,10 +19,8 @@ import { useLocalStorage } from '../../hooks/useLocalStorage'
 import { useAuth } from '../../contexts/AuthContext'
 import { useTranslation } from 'react-i18next'
 
-const ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
-const MANAGE_ROLES = ['SuperAdmin', 'FacultyManager']
-const APPLICANT_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator']
-const VIEW_ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
+const ALL_ROLES = ['SuperAdmin', 'DataAdministrator', 'Auditor', 'AdmissionsOperator', 'DataViewer']
+const AUDIT_ROLES = ['SuperAdmin', 'DataAdministrator', 'Auditor']
 
 function MainMenu({ collapsed }) {
   let [defaultOpenKeys, setDefaultOpenKeys] = useLocalStorage("mainMenuOpenedItems", [])
@@ -45,9 +43,9 @@ function MainMenu({ collapsed }) {
   const hasRole = (roles) => roles.includes(role)
 
   const settingsChildren = [
-    hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.evaluationCriteria'), ROUTES.EVALUATION_CRITERIA, <FileDoneOutlined />),
-    hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.evaluationCriteriaGroups'), ROUTES.EVALUATION_CRITERIA_GROUPS, <FolderOpenOutlined />),
-    hasRole(['SuperAdmin']) && createMenuItem(t('nav.users'), ROUTES.USERS, <TeamOutlined />),
+    hasRole(ALL_ROLES) && createMenuItem(t('nav.evaluationCriteria'), ROUTES.EVALUATION_CRITERIA, <FileDoneOutlined />),
+    hasRole(ALL_ROLES) && createMenuItem(t('nav.evaluationCriteriaGroups'), ROUTES.EVALUATION_CRITERIA_GROUPS, <FolderOpenOutlined />),
+    hasRole(ALL_ROLES) && createMenuItem(t('nav.users'), ROUTES.USERS, <TeamOutlined />),
   ].filter(Boolean)
 
   const menuItems = [
@@ -58,19 +56,19 @@ function MainMenu({ collapsed }) {
         createMenuItem(t('nav.applicants'), ROUTES.APPLICANTS, <IdcardOutlined />),
       ]
     },
-    hasRole(VIEW_ALL_ROLES) && {
+    hasRole(ALL_ROLES) && {
       type: "group",
       children: [
-        hasRole(VIEW_ALL_ROLES) && createMenuItem(t('nav.faculties'), ROUTES.FACULTIES, <BankOutlined />),
+        hasRole(ALL_ROLES) && createMenuItem(t('nav.faculties'), ROUTES.FACULTIES, <BankOutlined />),
         createMenuItem(t('nav.departments'), ROUTES.DEPARTMENTS, <BookOutlined />),
         createMenuItem(t('nav.specialties'), ROUTES.SPECIALTIES, <ToolOutlined />)
       ].filter(Boolean)
     },
-    (hasRole(['SuperAdmin', 'FacultyManager']) || hasRole(['DataViewer'])) && {
+    (hasRole(AUDIT_ROLES) || hasRole(ALL_ROLES)) && {
       type: "group",
       children: [
-        hasRole(['SuperAdmin', 'FacultyManager']) && createMenuItem(t('audit.nav'), ROUTES.AUDIT, <AuditOutlined />),
-        hasRole(['SuperAdmin', 'FacultyManager', 'DataViewer']) && createMenuItem(t('audit.logNav'), ROUTES.AUDIT_LOG, <FileSearchOutlined />),
+        hasRole(ALL_ROLES) && createMenuItem(t('audit.nav'), ROUTES.AUDIT, <AuditOutlined />),
+        hasRole(ALL_ROLES) && createMenuItem(t('audit.logNav'), ROUTES.AUDIT_LOG, <FileSearchOutlined />),
       ].filter(Boolean)
     },
     settingsChildren.length > 0 && {

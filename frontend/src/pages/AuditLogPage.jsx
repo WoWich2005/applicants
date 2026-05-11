@@ -64,12 +64,13 @@ function AuditLogPage() {
   const [selectedChanges, setSelectedChanges] = useState(null)
 
   const fetchAsync = useCallback(
-    (/** @type {{ page: number, pageSize: number, filters: Record<string, any[]> }} */ { page, pageSize, filters }) => {
+    (/** @type {{ page: number, pageSize: number, filters: Record<string, any[]>, sortField: string|null, sortOrder: string|null }} */ { page, pageSize, filters, sortField, sortOrder }) => {
       const dateRaw = filters?.createdAt?.[0]
       const parsed = dateRaw ? JSON.parse(dateRaw) : null
       return auditApi.getAuditLog({
         page, pageSize, filters,
         from: parsed?.[0], to: parsed?.[1],
+        sortOrder: sortField === 'createdAt' ? sortOrder : null,
       })
     },
     []
@@ -93,6 +94,8 @@ function AuditLogPage() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 160,
+      sorter: true,
+      defaultSortOrder: 'descend',
       filterDropdown: (props) => <DateRangeFilter {...props} t={t} />,
       filterIcon: (filtered) => <CalendarOutlined style={{ color: filtered ? '#1677ff' : undefined }} />,
       render: (v) => v ? dayjs(v).format('DD.MM.YYYY HH:mm') : '—',
