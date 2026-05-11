@@ -16,15 +16,14 @@ import Login from './pages/Login'
 import Users from './pages/Users'
 import AuditPage from './pages/AuditPage'
 import AuditLogPage from './pages/AuditLogPage'
+import CompetitionListResult from './pages/CompetitionListResult'
 import MainContainer from './components/MainContainer'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuth } from './contexts/AuthContext'
 
-const ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
-const ADMIN_ROLES = ['SuperAdmin']
-const VIEW_ALL_ROLES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
-const AUDIT_ROLES = ['SuperAdmin', 'FacultyManager']
-const AUDIT_LOG_ROLES = ['SuperAdmin', 'FacultyManager', 'DataViewer']
+const ALL_ROLES = ['SuperAdmin', 'DataAdministrator', 'Auditor', 'AdmissionsOperator', 'DataViewer']
+const ADMIN_ROLES = ['SuperAdmin', 'DataAdministrator', 'Auditor', 'AdmissionsOperator', 'DataViewer']
+const AUDIT_ROLES = ['SuperAdmin', 'DataAdministrator', 'Auditor']
 
 function AuthenticatedLayout() {
   const { auth } = useAuth()
@@ -43,6 +42,7 @@ export default function AppRouter() {
 
       <Route element={<AuthenticatedLayout />}>
         <Route path={ROUTES.RESULTS} element={<Results />} />
+        <Route path={ROUTES.COMPETITION_LIST_RESULT} element={<CompetitionListResult />} />
 
         <Route path={ROUTES.APPLICANTS} element={
           <ProtectedRoute roles={ALL_ROLES}><Applicants /></ProtectedRoute>
@@ -52,30 +52,30 @@ export default function AppRouter() {
         } />
 
         <Route path={ROUTES.FACULTIES} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><Faculties /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><Faculties /></ProtectedRoute>
         } />
         <Route path={ROUTES.DEPARTMENTS} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><Departments /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><Departments /></ProtectedRoute>
         } />
         <Route path={ROUTES.SPECIALTIES} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><Specialties /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><Specialties /></ProtectedRoute>
         } />
         <Route path={ROUTES.SPECIALTY_EDIT} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><SpecialtyEdit /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><SpecialtyEdit /></ProtectedRoute>
         } />
 
         <Route path={ROUTES.EVALUATION_CRITERIA} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><EvaluationCriteria /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><EvaluationCriteria /></ProtectedRoute>
         } />
         <Route path={ROUTES.EVALUATION_CRITERIA_GROUPS} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><EvaluationCriteriaGroups /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><EvaluationCriteriaGroups /></ProtectedRoute>
         } />
         <Route path={ROUTES.EVALUATION_CRITERIA_GROUP_EDIT} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><EvaluationCriteriaGroupEdit /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><EvaluationCriteriaGroupEdit /></ProtectedRoute>
         } />
 
         <Route path={ROUTES.COMPETITION_LIST_EDIT} element={
-          <ProtectedRoute roles={VIEW_ALL_ROLES}><CompetitionListEdit /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><CompetitionListEdit /></ProtectedRoute>
         } />
 
         <Route path={ROUTES.USERS} element={
@@ -83,10 +83,10 @@ export default function AppRouter() {
         } />
 
         <Route path={ROUTES.AUDIT} element={
-          <ProtectedRoute roles={AUDIT_ROLES}><AuditPage /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><AuditPage /></ProtectedRoute>
         } />
         <Route path={ROUTES.AUDIT_LOG} element={
-          <ProtectedRoute roles={AUDIT_LOG_ROLES}><AuditLogPage /></ProtectedRoute>
+          <ProtectedRoute roles={ALL_ROLES}><AuditLogPage /></ProtectedRoute>
         } />
 
         <Route path="*" element={<NotFound />} />

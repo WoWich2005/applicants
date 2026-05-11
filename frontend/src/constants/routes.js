@@ -2,6 +2,7 @@ export const ROUTES = {
   LOGIN: "/login",
 
   RESULTS: "/",
+  COMPETITION_LIST_RESULT: "/results/competition-list/:clId",
 
   APPLICANTS: "/applicants",
   APPLICANT_EDIT: "/applicant/:applicantId/edit",
