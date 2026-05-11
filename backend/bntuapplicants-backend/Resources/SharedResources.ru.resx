@@ -160,6 +160,7 @@
   <!-- ApplicantEvaluationValue controller -->
   <data name="ApplicantEvaluationValue.CreateError" xml:space="preserve"><value>Ошибка. Не удалось добавить оценочный параметр для абитуриента</value></data>
   <data name="ApplicantEvaluationValue.ValueOutOfRange" xml:space="preserve"><value>Значение {0} выходит за пределы допустимого диапазона [{1}, {2}] для параметра «{3}»</value></data>
+  <data name="ApplicantEvaluationValue.Duplicate" xml:space="preserve"><value>У абитуриента уже есть значение для этого оценочного параметра</value></data>
 
   <!-- Generic record messages -->
   <data name="Record.NotFound" xml:space="preserve"><value>Запись с id {0} не найдена</value></data>
@@ -174,6 +175,10 @@
   <!-- Result controller -->
   <data name="Result.FacultyNotFound" xml:space="preserve"><value>Факультет с ID {0} не найден</value></data>
   <data name="Result.NoSpecialties" xml:space="preserve"><value>Для указанного факультета не найдено специальностей</value></data>
+
+  <!-- Selection controller -->
+  <data name="Selection.RecalculateSuccess" xml:space="preserve"><value>Пересчёт завершён успешно</value></data>
+  <data name="Selection.CompetitionListNotFound" xml:space="preserve"><value>Конкурсный список с ID {0} не найден</value></data>
 
   <!-- Audit controller -->
   <data name="Audit.ApplicantNotFound" xml:space="preserve"><value>Абитуриент не найден</value></data>

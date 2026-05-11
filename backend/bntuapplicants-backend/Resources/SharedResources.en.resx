@@ -160,6 +160,7 @@
   <!-- ApplicantEvaluationValue controller -->
   <data name="ApplicantEvaluationValue.CreateError" xml:space="preserve"><value>Error: failed to add evaluation value for applicant</value></data>
   <data name="ApplicantEvaluationValue.ValueOutOfRange" xml:space="preserve"><value>Value {0} is outside the allowed range [{1}, {2}] for criterion "{3}"</value></data>
+  <data name="ApplicantEvaluationValue.Duplicate" xml:space="preserve"><value>The applicant already has a value for this evaluation criterion</value></data>
 
   <!-- Generic record -->
   <data name="Record.NotFound" xml:space="preserve"><value>Record with id {0} not found</value></data>
@@ -174,6 +175,10 @@
   <!-- Result -->
   <data name="Result.FacultyNotFound" xml:space="preserve"><value>Faculty with ID {0} not found</value></data>
   <data name="Result.NoSpecialties" xml:space="preserve"><value>No specialties found for the specified faculty</value></data>
+
+  <!-- Selection -->
+  <data name="Selection.RecalculateSuccess" xml:space="preserve"><value>Recalculation completed successfully</value></data>
+  <data name="Selection.CompetitionListNotFound" xml:space="preserve"><value>Competition list with ID {0} not found</value></data>
 
   <!-- Audit -->
   <data name="Audit.ApplicantNotFound" xml:space="preserve"><value>Applicant not found</value></data>

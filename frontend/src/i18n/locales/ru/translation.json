@@ -75,12 +75,40 @@
     "defaultUser": "Пользователь"
   },
   "results": {
-    "title": "Результаты",
-    "helpText": "На данной странице Вы можете скачать результаты в формате таблицы Excel",
+    "title": "Результаты отбора",
+    "helpText": "Конкурсные списки с результатами отбора абитуриентов",
     "colFaculty": "Факультет",
+    "colDepartment": "Кафедра",
+    "colSpecialty": "Специальность",
+    "colName": "Конкурсный список",
+    "colApplications": "Заявки",
+    "colPlan": "План",
+    "colSelected": "Зачислено",
     "colActions": "Действия",
+    "colExternalId": "Идентификатор",
+    "colApplicantName": "Имя абитуриента",
+    "colAdmittedTo": "Зачислен в",
+    "notAdmittedAnywhere": "Никуда",
     "downloadExcel": "Скачать Excel",
-    "error": "Ошибка получения данных"
+    "downloadError": "Ошибка скачивания файла",
+    "error": "Ошибка получения данных",
+    "filterFaculty": "Фильтр по факультету",
+    "filterDepartment": "Фильтр по кафедре",
+    "filterSpecialty": "Фильтр по специальности",
+    "plan": "План приёма",
+    "minScores": "Минимальные оценочные параметры для зачисления",
+    "admittedSection": "Зачислены",
+    "notAdmittedSection": "Подавали заявку, но не прошли",
+    "noCategories": "Категории приёма не найдены",
+    "backToResults": "К результатам",
+    "recalculate": {
+      "button": "Пересчитать заново",
+      "confirmTitle": "Запустить полный пересчёт?",
+      "confirmContent": "Все текущие результаты отбора будут перезаписаны. Это действие необратимо.",
+      "okText": "Пересчитать",
+      "success": "Пересчёт завершён успешно",
+      "error": "Ошибка при пересчёте"
+    }
   },
   "faculty": {
     "title": "Факультеты",
@@ -414,10 +442,10 @@
     "statusInactive": "Неактивен",
     "roles": {
       "SuperAdmin": "Суперпользователь",
-      "FacultyManager": "Роль факультета",
+      "DataAdministrator": "Администратор данных",
+      "Auditor": "Аудитор",
       "AdmissionsOperator": "Оператор приёмной комиссии",
-      "DataViewer": "Просмотр данных",
-      "ResultViewer": "Просмотр результатов"
+      "DataViewer": "Просмотр данных"
     },
     "form": {
       "loginLabel": "Логин",
@@ -428,16 +456,6 @@
       "passwordMinLength": "Минимум 6 символов",
       "roleLabel": "Роль",
       "roleRequired": "Выберите роль",
-      "facultyLabel": "Факультет",
-      "facultyRequired": "Выберите факультет",
-      "facultyPlaceholder": "Выберите факультет",
-      "filterFacultiesLabel": "Факультеты",
-      "filterFacultiesPlaceholder": "Выберите факультеты",
-      "specialtiesLabel": "Доступные специальности",
-      "specialtiesPlaceholder": "Выберите специальности",
-      "specialtiesDisabledPlaceholder": "Сначала выберите факультеты",
-      "facultyAccessLabel": "Доступные факультеты для просмотра результатов",
-      "facultyAccessPlaceholder": "Выберите факультеты (пусто = все)",
       "saveButton": "Сохранить",
       "createButton": "Создать",
       "saveError": "Ошибка сохранения"

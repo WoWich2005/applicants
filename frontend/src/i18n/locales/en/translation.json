@@ -75,12 +75,40 @@
     "defaultUser": "User"
   },
   "results": {
-    "title": "Results",
-    "helpText": "On this page you can download results in Excel format",
+    "title": "Selection Results",
+    "helpText": "Competition lists with applicant selection results",
     "colFaculty": "Faculty",
+    "colDepartment": "Department",
+    "colSpecialty": "Specialty",
+    "colName": "Competition List",
+    "colApplications": "Applications",
+    "colPlan": "Plan",
+    "colSelected": "Selected",
     "colActions": "Actions",
+    "colExternalId": "External ID",
+    "colApplicantName": "Applicant Name",
+    "colAdmittedTo": "Admitted To",
+    "notAdmittedAnywhere": "Nowhere",
     "downloadExcel": "Download Excel",
-    "error": "Error loading data"
+    "downloadError": "Error downloading file",
+    "error": "Error loading data",
+    "filterFaculty": "Filter by faculty",
+    "filterDepartment": "Filter by department",
+    "filterSpecialty": "Filter by specialty",
+    "plan": "Admission plan",
+    "minScores": "Minimum evaluation parameters for admission",
+    "admittedSection": "Admitted",
+    "notAdmittedSection": "Applied but not admitted",
+    "noCategories": "No admission categories found",
+    "backToResults": "Back to results",
+    "recalculate": {
+      "button": "Recalculate",
+      "confirmTitle": "Run full recalculation?",
+      "confirmContent": "All current selection results will be overwritten. This action cannot be undone.",
+      "okText": "Recalculate",
+      "success": "Recalculation completed successfully",
+      "error": "Error during recalculation"
+    }
   },
   "faculty": {
     "title": "Faculties",
@@ -414,10 +442,10 @@
     "statusInactive": "Inactive",
     "roles": {
       "SuperAdmin": "Super Administrator",
-      "FacultyManager": "Faculty Manager",
+      "DataAdministrator": "Data Administrator",
+      "Auditor": "Auditor",
       "AdmissionsOperator": "Admissions Operator",
-      "DataViewer": "Data Viewer",
-      "ResultViewer": "Results Viewer"
+      "DataViewer": "Data Viewer"
     },
     "form": {
       "loginLabel": "Login",
@@ -428,16 +456,6 @@
       "passwordMinLength": "Minimum 6 characters",
       "roleLabel": "Role",
       "roleRequired": "Please select a role",
-      "facultyLabel": "Faculty",
-      "facultyRequired": "Please select a faculty",
-      "facultyPlaceholder": "Select faculty",
-      "filterFacultiesLabel": "Faculties",
-      "filterFacultiesPlaceholder": "Select faculties",
-      "specialtiesLabel": "Available Specialties",
-      "specialtiesPlaceholder": "Select specialties",
-      "specialtiesDisabledPlaceholder": "First select faculties",
-      "facultyAccessLabel": "Accessible Faculties for Results Viewing",
-      "facultyAccessPlaceholder": "Select faculties (empty = all)",
       "saveButton": "Save",
       "createButton": "Create",
       "saveError": "Failed to save"
