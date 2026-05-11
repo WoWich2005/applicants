@@ -15,7 +15,7 @@ namespace bntuapplicants_backend.Services
             _config = config;
         }
 
-        public string GenerateToken(User user, List<int> specialtyIds, List<int> facultyAccessIds)
+        public string GenerateToken(User user)
         {
             var claims = new List<Claim>
             {
@@ -23,15 +23,6 @@ namespace bntuapplicants_backend.Services
                 new(ClaimTypes.Name, user.Username),
                 new(ClaimTypes.Role, user.Role),
             };
-
-            if (user.FacultyId.HasValue)
-                claims.Add(new Claim("faculty_id", user.FacultyId.Value.ToString()));
-
-            if (specialtyIds.Count != 0)
-                claims.Add(new Claim("specialty_ids", string.Join(",", specialtyIds)));
-
-            if (facultyAccessIds.Count != 0)
-                claims.Add(new Claim("faculty_access_ids", string.Join(",", facultyAccessIds)));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -3,7 +3,6 @@ import styles from "./styles.module.scss"
 import { useEffect, useState } from "react"
 import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
-import { useAuth } from "../../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
 
 function DepartmentForm(props) {
@@ -13,10 +12,6 @@ function DepartmentForm(props) {
   const [isLoading, setIsLoading] = useState(false)
   const [faculties, setFaculties] = useState([])
   const [isFacultiesLoading, setIsFacultiesLoading] = useState(true)
-
-  const { auth } = useAuth()
-  const isFacultyManager = auth?.role === 'FacultyManager'
-  const managerFacultyId = isFacultyManager ? auth?.facultyId : null
 
   useEffect(() => {
     const fetchData = async () => {
@@ -36,10 +31,7 @@ function DepartmentForm(props) {
   }, [])
 
   useEffect(() => {
-    const values = props.elementId
-      ? props.initialValues
-      : { ...props.initialValues, facultyId: managerFacultyId ?? props.initialValues?.facultyId }
-    form.setFieldsValue(values)
+    form.setFieldsValue(props.initialValues)
   }, [props.initialValues, props.elementId, form])
 
   const api = departmentsApi
@@ -102,7 +94,7 @@ function DepartmentForm(props) {
               name="facultyId"
               rules={[{ required: true, message: t('department.form.facultyRequired') }]}
             >
-              <Select disabled={isFacultyManager || !!props.readOnly}>
+              <Select disabled={!!props.readOnly}>
                 {faculties.map(faculty => (
                   <Select.Option value={faculty.id} key={faculty.id}>
                     {faculty.name}

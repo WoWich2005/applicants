@@ -6,7 +6,6 @@ using bntuapplicants_backend.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
 {
@@ -25,40 +24,10 @@ namespace bntuapplicants_backend.Controllers
             _localizer = localizer;
         }
 
-        private int? GetFacultyManagerFacultyId()
-        {
-            if (User.FindFirst(ClaimTypes.Role)?.Value != UserRoles.FacultyManager)
-                return null;
-            var claim = User.FindFirst("faculty_id")?.Value;
-            return claim != null ? int.Parse(claim) : null;
-        }
-
-        private async Task<bool> SpecialtyBelongsToFacultyAsync(int specialtyId, int facultyId)
-        {
-            var specialty = await _repository.GetByIdAsync(specialtyId);
-            if (specialty == null) return false;
-            var department = await _departmentRepository.GetByIdAsync(specialty.DepartmentId);
-            return department?.FacultyId == facultyId;
-        }
-
-        private async Task<bool> DepartmentBelongsToFacultyAsync(int departmentId, int facultyId)
-        {
-            var department = await _departmentRepository.GetByIdAsync(departmentId);
-            return department?.FacultyId == facultyId;
-        }
-
         [HttpGet]
         public async Task<ActionResult<List<Specialty>>> GetAllRecords()
         {
-            var facultyId = GetFacultyManagerFacultyId();
-            if (facultyId.HasValue)
-            {
-                var filtered = await _repository.GetByFacultyIdAsync(facultyId.Value);
-                return Ok(filtered);
-            }
-
-            var records = await _repository.GetAllAsync();
-            return Ok(records);
+            return Ok(await _repository.GetAllAsync());
         }
 
         [HttpGet("paged")]
@@ -75,18 +44,11 @@ namespace bntuapplicants_backend.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 10;
 
-            var managerFacultyId = GetFacultyManagerFacultyId();
-
             if (departmentId.HasValue)
-            {
-                if (managerFacultyId.HasValue && !await DepartmentBelongsToFacultyAsync(departmentId.Value, managerFacultyId.Value))
-                    return Forbid();
                 return Ok(await _repository.GetPagedByDepartmentIdAsync(departmentId.Value, page, pageSize, search, idSearch, sortField, sortOrder));
-            }
 
-            var effectiveFacultyId = managerFacultyId ?? facultyId;
-            if (effectiveFacultyId.HasValue)
-                return Ok(await _repository.GetPagedByFacultyIdAsync(effectiveFacultyId.Value, page, pageSize, search, idSearch, sortField, sortOrder));
+            if (facultyId.HasValue)
+                return Ok(await _repository.GetPagedByFacultyIdAsync(facultyId.Value, page, pageSize, search, idSearch, sortField, sortOrder));
 
             return Ok(await _repository.GetPagedAsync(page, pageSize, search, idSearch, sortField, sortOrder));
         }
@@ -94,10 +56,6 @@ namespace bntuapplicants_backend.Controllers
         [HttpGet("by-department/{departmentId}")]
         public async Task<ActionResult<List<Specialty>>> GetByDepartmentId(int departmentId)
         {
-            var facultyId = GetFacultyManagerFacultyId();
-            if (facultyId.HasValue && !await DepartmentBelongsToFacultyAsync(departmentId, facultyId.Value))
-                return Forbid();
-
             var records = await _repository.GetByDepartmentIdAsync(departmentId);
             return Ok(records);
         }
@@ -110,24 +68,15 @@ namespace bntuapplicants_backend.Controllers
             if (record == null)
                 return NotFound();
 
-            var facultyId = GetFacultyManagerFacultyId();
-            if (facultyId.HasValue && !await DepartmentBelongsToFacultyAsync(record.DepartmentId, facultyId.Value))
-                return Forbid();
-
             return record;
         }
 
         [HttpPost]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<Faculty>> Create([FromBody] SpecialtyRequestDto dto)
         {
-            var facultyId = GetFacultyManagerFacultyId();
-            if (facultyId.HasValue && !await DepartmentBelongsToFacultyAsync(dto.DepartmentId, facultyId.Value))
-                return Forbid();
-
             if (await _repository.ExistsByNameAsync(dto.Name, dto.DepartmentId))
                 return Conflict(new { message = (string)_localizer["Specialty.NameExists"] });
 
@@ -148,19 +97,14 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
                 return NotFound(new { message = (string)_localizer["Specialty.NotFound", id] });
-
-            var facultyId = GetFacultyManagerFacultyId();
-            if (facultyId.HasValue && !await DepartmentBelongsToFacultyAsync(existing.DepartmentId, facultyId.Value))
-                return Forbid();
 
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
@@ -170,25 +114,15 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] SpecialtyRequestDto dto)
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
                 return NotFound(new { message = (string)_localizer["Specialty.NotFound", id] });
-
-            var facultyId = GetFacultyManagerFacultyId();
-            if (facultyId.HasValue)
-            {
-                if (!await DepartmentBelongsToFacultyAsync(existing.DepartmentId, facultyId.Value))
-                    return Forbid();
-                if (!await DepartmentBelongsToFacultyAsync(dto.DepartmentId, facultyId.Value))
-                    return Forbid();
-            }
 
             if (await _repository.ExistsByNameAsync(dto.Name, dto.DepartmentId, id))
                 return Conflict(new { message = (string)_localizer["Specialty.NameExists"] });

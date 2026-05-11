@@ -1,7 +1,7 @@
 import { createContext, useContext, useState } from 'react'
 
 /**
- * @typedef {{ token: string, username: string, role: string, facultyId?: number, specialtyIds?: string, facultyAccessIds?: string }} AuthData
+ * @typedef {{ token: string, username: string, role: string }} AuthData
  */
 
 const defaultContext = {

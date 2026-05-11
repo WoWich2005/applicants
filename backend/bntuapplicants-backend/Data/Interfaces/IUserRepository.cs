@@ -8,15 +8,13 @@ namespace bntuapplicants_backend.Data.Interfaces
         Task<bool> AnyExistsAsync();
         Task<User?> GetByIdAsync(int id);
         Task<User?> GetByUsernameAsync(string username);
-        Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null, string? idSearch = null);
+        Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null, string? idSearch = null, string? sortField = null, string? sortOrder = null);
         Task<UserResponseDto?> GetDetailedByIdAsync(int id);
-        Task<User> CreateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds);
-        Task<bool> UpdateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds);
+        Task<User> CreateAsync(User user);
+        Task<bool> UpdateAsync(User user);
         Task<bool> ToggleActiveAsync(int id);
         Task<bool> DeleteAsync(int id);
         Task<bool> ChangePasswordAsync(int id, string newPasswordHash);
-        Task<List<int>> GetSpecialtyIdsAsync(int userId);
-        Task<List<int>> GetFacultyAccessIdsAsync(int userId);
         Task<int> CountByRoleAsync(string role);
     }
 }

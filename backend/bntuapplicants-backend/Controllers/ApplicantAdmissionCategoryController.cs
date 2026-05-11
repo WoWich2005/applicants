@@ -7,7 +7,6 @@ using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
 {
@@ -16,50 +15,17 @@ namespace bntuapplicants_backend.Controllers
     public class ApplicantAdmissionCategoryController : ControllerBase
     {
         private readonly IApplicantAdmissionCategoryRepository _repository;
-        private readonly IAdmissionCategoryRepository _admissionCategoryRepository;
-        private readonly ICompetitionListRepository _competitionListRepository;
         private readonly SelectionService _selectionService;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
         public ApplicantAdmissionCategoryController(
             IApplicantAdmissionCategoryRepository repository,
-            IAdmissionCategoryRepository admissionCategoryRepository,
-            ICompetitionListRepository competitionListRepository,
             SelectionService selectionService,
             IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
-            _admissionCategoryRepository = admissionCategoryRepository;
-            _competitionListRepository = competitionListRepository;
             _selectionService = selectionService;
             _localizer = localizer;
-        }
-
-        private List<int>? GetOperatorSpecialtyIds()
-        {
-            if (User.FindFirst(ClaimTypes.Role)?.Value != UserRoles.AdmissionsOperator)
-                return null;
-
-            var claim = User.FindFirst("specialty_ids")?.Value;
-            if (string.IsNullOrEmpty(claim)) return [];
-            return claim.Split(',').Select(int.Parse).ToList();
-        }
-
-        private async Task<int?> GetSpecialtyIdForCategoryAsync(int admissionCategoryId)
-        {
-            var category = await _admissionCategoryRepository.GetByIdAsync(admissionCategoryId);
-            if (category == null) return null;
-            var list = await _competitionListRepository.GetByIdAsync(category.CompetitionListId);
-            return list?.SpecialtyId;
-        }
-
-        private async Task<bool> HasSpecialtyAccessAsync(int admissionCategoryId)
-        {
-            var allowedIds = GetOperatorSpecialtyIds();
-            if (allowedIds == null) return true;
-
-            var specialtyId = await GetSpecialtyIdForCategoryAsync(admissionCategoryId);
-            return specialtyId.HasValue && allowedIds.Contains(specialtyId.Value);
         }
 
         [HttpGet]
@@ -98,15 +64,11 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
+        [Authorize(Roles = UserRoles.WriteApplicants)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<ActionResult<ApplicantAdmissionCategory>> Create([FromBody] ApplicantAdmissionCategoryRequestDto dto)
         {
-            if (!await HasSpecialtyAccessAsync(dto.AdmissionCategoryId))
-                return Forbid();
-
             if (await _repository.ExistsAsync(dto.ApplicantId, dto.AdmissionCategoryId))
                 return BadRequest(new { message = (string)_localizer["ApplicantAdmissionCategory.AlreadyExists"] });
 
@@ -120,7 +82,7 @@ namespace bntuapplicants_backend.Controllers
             if (createdRecord == null)
                 return StatusCode(500, new { message = (string)_localizer["ApplicantAdmissionCategory.CreateError"] });
 
-            await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
+            await _selectionService.RecalculateAllAsync();
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -130,19 +92,15 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
+        [Authorize(Roles = UserRoles.WriteApplicants)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] ApplicantAdmissionCategoryRequestDto dto)
         {
             var existing = await _repository.GetByIdAsync(id);
             if (existing == null)
                 return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
-
-            if (!await HasSpecialtyAccessAsync(dto.AdmissionCategoryId))
-                return Forbid();
 
             if (await _repository.ExistsAsync(dto.ApplicantId, dto.AdmissionCategoryId, id))
                 return BadRequest(new { message = (string)_localizer["ApplicantAdmissionCategory.AlreadyExists"] });
@@ -158,17 +116,14 @@ namespace bntuapplicants_backend.Controllers
             if (!success)
                 return StatusCode(500, new { message = (string)_localizer["Record.UpdateError"] });
 
-            await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
-            if (existing.ApplicantId != dto.ApplicantId)
-                await _selectionService.RecalculateForApplicantAsync(existing.ApplicantId);
+            await _selectionService.RecalculateAllAsync();
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
+        [Authorize(Roles = UserRoles.WriteApplicants)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
-        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
@@ -176,14 +131,11 @@ namespace bntuapplicants_backend.Controllers
             if (existing == null)
                 return NotFound(new { message = (string)_localizer["Record.NotFound", id] });
 
-            if (!await HasSpecialtyAccessAsync(existing.AdmissionCategoryId))
-                return Forbid();
-
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
                 return StatusCode(500, new { message = (string)_localizer["Record.DeleteError"] });
 
-            await _selectionService.RecalculateForApplicantAsync(existing.ApplicantId);
+            await _selectionService.RecalculateAllAsync();
 
             return NoContent();
         }

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { usePermissions } from '../hooks/usePermissions'
 import { Button, DatePicker, Input, Space, Tabs, Tag, Typography, message } from 'antd'
 import { CalendarOutlined, SearchOutlined } from '@ant-design/icons'
 import dayjs from 'dayjs'
@@ -8,20 +9,18 @@ import CrudTable from '../components/CrudTable'
 import DataTable from '../components/DataTable'
 import UserForm from '../components/Forms/UserForm'
 import { usersApi } from '../api/usersApi'
-import { facultiesApi } from '../api/facultyApi'
-import { specialtiesApi } from '../api/specialtiesApi'
-import { departmentsApi } from '../api/departmentsApi'
 import { auditApi } from '../api/auditApi'
 import { useTranslation } from 'react-i18next'
 import { useServerTable } from '../hooks/useServerTable'
 
 const { RangePicker } = DatePicker
 
-const ROLE_VALUES = ['SuperAdmin', 'FacultyManager', 'AdmissionsOperator', 'DataViewer']
+const ROLE_VALUES = ['SuperAdmin', 'DataAdministrator', 'Auditor', 'AdmissionsOperator', 'DataViewer']
 
 const ROLE_COLORS = {
   SuperAdmin: 'red',
-  FacultyManager: 'blue',
+  DataAdministrator: 'magenta',
+  Auditor: 'blue',
   AdmissionsOperator: 'green',
   DataViewer: 'orange',
 }
@@ -93,10 +92,10 @@ function TextSearchFilter({ setSelectedKeys, selectedKeys, confirm, clearFilters
 function AuthLogTab() {
   const { t } = useTranslation()
 
-  const fetchAsync = useCallback(({ page, pageSize, filters }) => {
+  const fetchAsync = useCallback(({ page, pageSize, filters, sortField, sortOrder }) => {
     const dateRaw = filters?.createdAt?.[0]
     const parsed = dateRaw ? JSON.parse(dateRaw) : null
-    return auditApi.getAuthLog({ page, pageSize, filters, from: parsed?.[0], to: parsed?.[1] })
+    return auditApi.getAuthLog({ page, pageSize, filters, from: parsed?.[0], to: parsed?.[1], sortOrder: sortField === 'createdAt' ? sortOrder : null })
   }, [])
 
   const { data, loading, pagination, onTableChange } = useServerTable(fetchAsync, { defaultPageSize: 20 })
@@ -107,6 +106,8 @@ function AuthLogTab() {
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 160,
+      sorter: true,
+      defaultSortOrder: 'descend',
       filterDropdown: (props) => <DateRangeFilter {...props} t={t} />,
       filterIcon: (filtered) => <CalendarOutlined style={{ color: filtered ? '#1677ff' : undefined }} />,
       render: (v) => v ? dayjs(v).format('DD.MM.YYYY HH:mm') : '—',
@@ -174,6 +175,7 @@ function AuthLogTab() {
 
 function Users() {
   const { t } = useTranslation()
+  const { canManageUsers } = usePermissions()
   const [messageApi, contextHolder] = message.useMessage()
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -183,15 +185,6 @@ function Users() {
     searchParams.set('act', key)
     setSearchParams(searchParams)
   }
-  const [faculties, setFaculties] = useState([])
-  const [specialties, setSpecialties] = useState([])
-  const [departments, setDepartments] = useState([])
-
-  useEffect(() => {
-    facultiesApi.getAll().then(r => setFaculties(r.data)).catch(() => {})
-    specialtiesApi.getAll().then(r => setSpecialties(r.data)).catch(() => {})
-    departmentsApi.getAll().then(r => setDepartments(r.data)).catch(() => {})
-  }, [])
 
   const handleToggleActive = async (/** @type {any} */ user, /** @type {any} */ updateEl) => {
     try {
@@ -209,7 +202,8 @@ function Users() {
   const usersTableContent = (
     <CrudTable
       elementForm={UserForm}
-      elementFormProps={{ faculties, specialties, departments }}
+      elementFormProps={{}}
+      readOnly={!canManageUsers}
 
       serverSidePagination={true}
       getPagedAsync={(/** @type {any} */ params) => usersApi.getPaged({
@@ -219,6 +213,8 @@ function Users() {
         role: params.filters?.role?.[0],
         isActive: params.filters?.isActive?.[0],
         idSearch: params.filters?.id?.[0],
+        sortField: params.sortField,
+        sortOrder: params.sortOrder,
       })}
       deleteAsync={(/** @type {any} */ id) => usersApi.delete(id)}
 
@@ -226,11 +222,11 @@ function Users() {
       renderEditTitle={(/** @type {any} */ el) => t('users.editTitle', { username: el?.username })}
       renderDeleteText={(/** @type {any} */ el) => t('users.deleteText', { username: el?.username })}
 
-      extraActions={(/** @type {any} */ user, /** @type {any} */ updateEl) => (
+      extraActions={canManageUsers ? ((/** @type {any} */ user, /** @type {any} */ updateEl) => (
         <Button type="link" onClick={() => handleToggleActive(user, updateEl)}>
           {user.isActive ? t('users.deactivate') : t('users.activate')}
         </Button>
-      )}
+      )) : undefined}
 
       columns={[
         {
@@ -238,7 +234,7 @@ function Users() {
           dataIndex: 'id',
           key: 'id',
           withSearch: true,
-          sorter: false,
+          sorter: true,
         },
         {
           title: t('users.colLogin'),

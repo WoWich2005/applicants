@@ -7,7 +7,6 @@ using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
-using System.Security.Claims;
 
 namespace bntuapplicants_backend.Controllers
 {
@@ -18,35 +17,21 @@ namespace bntuapplicants_backend.Controllers
         private readonly IAuditRepository _auditRepo;
         private readonly IAuditLogger _auditLogger;
         private readonly IApplicantDeletionRequestRepository _deletionRequestRepo;
+        private readonly SelectionService _selectionService;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
         public AuditController(
             IAuditRepository auditRepo,
             IAuditLogger auditLogger,
             IApplicantDeletionRequestRepository deletionRequestRepo,
+            SelectionService selectionService,
             IStringLocalizer<SharedResources> localizer)
         {
             _auditRepo = auditRepo;
             _auditLogger = auditLogger;
             _deletionRequestRepo = deletionRequestRepo;
+            _selectionService = selectionService;
             _localizer = localizer;
-        }
-
-        private string CurrentRole => User.FindFirstValue(ClaimTypes.Role)!;
-
-        private (int? facultyId, List<int> facultyAccessIds, List<int> specialtyIds) GetAccessContext()
-        {
-            var role = CurrentRole;
-            if (role == UserRoles.SuperAdmin)
-                return (null, [], []);
-
-            var facultyId = User.FindFirstValue("faculty_id") is { } f ? int.Parse(f) : (int?)null;
-            var facultyAccessIds = User.FindFirstValue("faculty_access_ids") is { } fa && !string.IsNullOrEmpty(fa)
-                ? fa.Split(',').Select(int.Parse).ToList() : new List<int>();
-            var specialtyIds = User.FindFirstValue("specialty_ids") is { } s && !string.IsNullOrEmpty(s)
-                ? s.Split(',').Select(int.Parse).ToList() : new List<int>();
-
-            return (facultyId, facultyAccessIds, specialtyIds);
         }
 
         // История конкретной записи — доступно всем авторизованным
@@ -60,7 +45,8 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] string? action = null,
             [FromQuery] string? logEntityType = null,
             [FromQuery] DateTime? from = null,
-            [FromQuery] DateTime? to = null)
+            [FromQuery] DateTime? to = null,
+            [FromQuery] string? sortOrder = null)
         {
             if (string.IsNullOrWhiteSpace(entityType) || string.IsNullOrWhiteSpace(entityId))
                 return BadRequest(new { message = "entityType and entityId are required" });
@@ -68,12 +54,12 @@ namespace bntuapplicants_backend.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-            return Ok(await _auditRepo.GetEntityHistoryAsync(entityType, entityId, page, pageSize, username, action, logEntityType, from, to));
+            return Ok(await _auditRepo.GetEntityHistoryAsync(entityType, entityId, page, pageSize, username, action, logEntityType, from, to, sortOrder));
         }
 
-        // Общий журнал — SuperAdmin, FacultyManager, DataViewer
+        // Общий журнал — все аутентифицированные
         [HttpGet("log")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager},{UserRoles.DataViewer}")]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<AuditLogEntry>>> GetAuditLog(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
@@ -82,17 +68,17 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] string? action = null,
             [FromQuery] string? entityId = null,
             [FromQuery] DateTime? from = null,
-            [FromQuery] DateTime? to = null)
+            [FromQuery] DateTime? to = null,
+            [FromQuery] string? sortOrder = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-            return Ok(await _auditRepo.GetAuditLogPagedAsync(page, pageSize, username, entityType, action, entityId, from, to));
+            return Ok(await _auditRepo.GetAuditLogPagedAsync(page, pageSize, username, entityType, action, entityId, from, to, sortOrder));
         }
 
-        // Журнал авторизации — только SuperAdmin
         [HttpGet("auth-log")]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<AuthLogEntry>>> GetAuthLog(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
@@ -103,17 +89,18 @@ namespace bntuapplicants_backend.Controllers
             [FromQuery] string? failureReason = null,
             [FromQuery] string? userAgent = null,
             [FromQuery] DateTime? from = null,
-            [FromQuery] DateTime? to = null)
+            [FromQuery] DateTime? to = null,
+            [FromQuery] string? sortOrder = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-            return Ok(await _auditRepo.GetAuthLogPagedAsync(page, pageSize, userId, username, eventType, ipAddress, failureReason, userAgent, from, to));
+            return Ok(await _auditRepo.GetAuthLogPagedAsync(page, pageSize, userId, username, eventType, ipAddress, failureReason, userAgent, from, to, sortOrder));
         }
 
         // Статус валидации абитуриента
         [HttpGet("validation/{applicantId:int}")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize]
         public async Task<ActionResult<ValidationStatusDto>> GetValidationStatus(int applicantId)
         {
             var status = await _auditRepo.GetValidationStatusAsync(applicantId);
@@ -124,7 +111,7 @@ namespace bntuapplicants_backend.Controllers
 
         // Подтвердить валидацию
         [HttpPost("validation/{applicantId:int}")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize(Roles = UserRoles.WriteAudit)]
         public async Task<IActionResult> Validate(int applicantId, [FromBody] ValidateApplicantRequestDto dto)
         {
             var (canValidate, missingCriteria, invalidPriorities) = await _auditRepo.CheckValidationBlockersAsync(applicantId);
@@ -140,7 +127,7 @@ namespace bntuapplicants_backend.Controllers
 
         // Отозвать валидацию
         [HttpDelete("validation/{applicantId:int}")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize(Roles = UserRoles.WriteAudit)]
         public async Task<IActionResult> Invalidate(int applicantId, [FromBody] InvalidateApplicantRequestDto dto)
         {
             await _auditRepo.InvalidateApplicantAsync(applicantId);
@@ -149,17 +136,17 @@ namespace bntuapplicants_backend.Controllers
             return NoContent();
         }
 
-        // Счётчики алертов
+        // Счётчики алертов — все аутентифицированные
         [HttpGet("alerts-summary")]
+        [Authorize]
         public async Task<ActionResult<AlertsSummaryDto>> GetAlertsSummary()
         {
-            var (facultyId, facultyAccessIds, specialtyIds) = GetAccessContext();
-            return Ok(await _auditRepo.GetAlertsSummaryAsync(facultyId, facultyAccessIds, specialtyIds));
+            return Ok(await _auditRepo.GetAlertsSummaryAsync());
         }
 
         // Список абитуриентов (все + с фильтром по статусу)
         [HttpGet("unvalidated")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<UnvalidatedApplicantDto>>> GetUnvalidated(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
@@ -169,24 +156,22 @@ namespace bntuapplicants_backend.Controllers
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 20;
 
-            var (facultyId, facultyAccessIds, specialtyIds) = GetAccessContext();
-            return Ok(await _auditRepo.GetUnvalidatedApplicantsAsync(page, pageSize, facultyId, facultyAccessIds, specialtyIds, status, search));
+            return Ok(await _auditRepo.GetUnvalidatedApplicantsAsync(page, pageSize, status, search));
         }
 
         // Список абитуриентов с некорректными данными
         [HttpGet("incomplete")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<IncompleteApplicantDto>>> GetIncomplete(
             [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
         {
             if (page < 1) page = 1;
             if (pageSize < 1 || pageSize > 100) pageSize = 20;
-            var (facultyId, facultyAccessIds, specialtyIds) = GetAccessContext();
-            return Ok(await _auditRepo.GetIncompleteApplicantsAsync(page, pageSize, facultyId, facultyAccessIds, specialtyIds, search));
+            return Ok(await _auditRepo.GetIncompleteApplicantsAsync(page, pageSize, search));
         }
 
         [HttpGet("incomplete/{applicantId}")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager},{UserRoles.AdmissionsOperator},{UserRoles.DataViewer}")]
+        [Authorize]
         public async Task<ActionResult<IncompleteApplicantDto>> GetIncompleteForApplicant(int applicantId)
         {
             var (_, missingCriteria, invalidPriorities) = await _auditRepo.CheckValidationBlockersAsync(applicantId);
@@ -200,7 +185,7 @@ namespace bntuapplicants_backend.Controllers
 
         // Конкурсные списки с некорректными приоритетами категорий приёма
         [HttpGet("invalid-admission-categories")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<InvalidCompetitionListDto>>> GetInvalidAdmissionCategories(
             [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null,
             [FromQuery] string? faculty = null, [FromQuery] string? department = null, [FromQuery] string? specialty = null)
@@ -212,7 +197,7 @@ namespace bntuapplicants_backend.Controllers
 
         // Группы оценочных параметров с некорректными приоритетами
         [HttpGet("invalid-criteria-groups")]
-        [Authorize(Roles = $"{UserRoles.SuperAdmin},{UserRoles.FacultyManager}")]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<InvalidCriteriaGroupDto>>> GetInvalidCriteriaGroups(
             [FromQuery] int page = 1, [FromQuery] int pageSize = 20, [FromQuery] string? search = null)
         {
@@ -221,9 +206,9 @@ namespace bntuapplicants_backend.Controllers
             return Ok(await _auditRepo.GetInvalidCriteriaGroupsAsync(page, pageSize, search));
         }
 
-        // Список ожидающих удаления абитуриентов — только SuperAdmin
+        // Список ожидающих удаления абитуриентов
         [HttpGet("pending-deletions")]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize]
         public async Task<ActionResult<PagedResponse<PendingDeletionDto>>> GetPendingDeletions(
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 20,
@@ -237,25 +222,31 @@ namespace bntuapplicants_backend.Controllers
             return Ok(await _deletionRequestRepo.GetPagedAsync(page, pageSize, search, requestedBySearch, status, idSearch));
         }
 
-        // Подтвердить удаление — только SuperAdmin
+        // Подтвердить удаление
         [HttpPost("pending-deletions/{applicantId:int}/confirm")]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize(Roles = UserRoles.WriteAudit)]
         public async Task<IActionResult> ConfirmDeletion(int applicantId)
         {
             var confirmed = await _deletionRequestRepo.ConfirmAsync(applicantId);
             if (!confirmed)
                 return NotFound(new { message = (string)_localizer["Applicant.DeletionRequest.NotFound"] });
+
+            await _selectionService.RecalculateAllAsync();
+
             return NoContent();
         }
 
-        // Отклонить удаление — только SuperAdmin
+        // Отклонить удаление
         [HttpPost("pending-deletions/{applicantId:int}/reject")]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize(Roles = UserRoles.WriteAudit)]
         public async Task<IActionResult> RejectDeletion(int applicantId)
         {
             var rejected = await _deletionRequestRepo.RejectAsync(applicantId);
             if (!rejected)
                 return NotFound(new { message = (string)_localizer["Applicant.DeletionRequest.NotFound"] });
+
+            await _selectionService.RecalculateAllAsync();
+
             return NoContent();
         }
     }

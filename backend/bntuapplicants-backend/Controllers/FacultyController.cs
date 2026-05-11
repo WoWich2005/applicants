@@ -59,7 +59,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<Faculty>> Create([FromBody] FacultyRequestDto dto)
@@ -83,7 +83,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
@@ -100,7 +100,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

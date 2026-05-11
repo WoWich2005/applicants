@@ -51,9 +51,7 @@ namespace bntuapplicants_backend.Controllers
                 return Unauthorized(new { message = (string)_localizer["Auth.AccountDeactivated"] });
             }
 
-            var specialtyIds = await _userRepo.GetSpecialtyIdsAsync(user.Id);
-            var facultyAccessIds = await _userRepo.GetFacultyAccessIdsAsync(user.Id);
-            var token = _jwtService.GenerateToken(user, specialtyIds, facultyAccessIds);
+            var token = _jwtService.GenerateToken(user);
 
             await _authLogger.LogAsync("login_success", user.Username,
                 userId: user.Id, ipAddress: GetIp(), userAgent: GetUserAgent());
@@ -62,10 +60,7 @@ namespace bntuapplicants_backend.Controllers
             {
                 Token = token,
                 Username = user.Username,
-                Role = user.Role,
-                FacultyId = user.FacultyId,
-                SpecialtyIds = specialtyIds,
-                FacultyAccessIds = facultyAccessIds
+                Role = user.Role
             });
         }
 

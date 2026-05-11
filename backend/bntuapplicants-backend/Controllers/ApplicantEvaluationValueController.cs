@@ -69,7 +69,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
+        [Authorize(Roles = UserRoles.WriteApplicants)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ApplicantEvaluationValue>> Create([FromBody] ApplicantEvaluationValueRequestDto dto)
@@ -77,6 +77,9 @@ namespace bntuapplicants_backend.Controllers
             var rangeError = await ValidateValueRange(dto.EvaluationCriteriaId, dto.Value);
             if (rangeError != null)
                 return rangeError;
+
+            if (await _repository.ExistsForApplicantAsync(dto.ApplicantId, dto.EvaluationCriteriaId))
+                return BadRequest(new { message = (string)_localizer["ApplicantEvaluationValue.Duplicate"] });
 
             var createdRecord = await _repository.CreateAsync(new ApplicantEvaluationValue
             {
@@ -88,7 +91,7 @@ namespace bntuapplicants_backend.Controllers
             if (createdRecord == null)
                 return StatusCode(500, new { message = (string)_localizer["ApplicantEvaluationValue.CreateError"] });
 
-            await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
+            await _selectionService.RecalculateAllAsync();
 
             return CreatedAtAction(
                 nameof(this.GetById),
@@ -98,7 +101,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
+        [Authorize(Roles = UserRoles.WriteApplicants)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -112,6 +115,9 @@ namespace bntuapplicants_backend.Controllers
             if (rangeError != null)
                 return rangeError;
 
+            if (await _repository.ExistsForApplicantAsync(dto.ApplicantId, dto.EvaluationCriteriaId, excludeId: id))
+                return BadRequest(new { message = (string)_localizer["ApplicantEvaluationValue.Duplicate"] });
+
             bool success = await _repository.UpdateAsync(new ApplicantEvaluationValue
             {
                 Id = id,
@@ -123,15 +129,13 @@ namespace bntuapplicants_backend.Controllers
             if (!success)
                 return StatusCode(500, new { message = (string)_localizer["Record.UpdateError"] });
 
-            await _selectionService.RecalculateForApplicantAsync(dto.ApplicantId);
-            if (existing.ApplicantId != dto.ApplicantId)
-                await _selectionService.RecalculateForApplicantAsync(existing.ApplicantId);
+            await _selectionService.RecalculateAllAsync();
 
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager + "," + UserRoles.AdmissionsOperator)]
+        [Authorize(Roles = UserRoles.WriteApplicants)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
@@ -144,7 +148,7 @@ namespace bntuapplicants_backend.Controllers
             if (!deleted)
                 return StatusCode(500, new { message = (string)_localizer["Record.DeleteError"] });
 
-            await _selectionService.RecalculateForApplicantAsync(existing.ApplicantId);
+            await _selectionService.RecalculateAllAsync();
 
             return NoContent();
         }

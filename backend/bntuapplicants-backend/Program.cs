@@ -24,7 +24,8 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(allowedOrigins)
               .AllowAnyHeader()
-              .AllowAnyMethod();
+              .AllowAnyMethod()
+              .WithExposedHeaders("Content-Disposition");
     });
 });
 
@@ -127,6 +128,7 @@ builder.Services.AddScoped<ISelectedApplicantRepository, SelectedApplicantReposi
 builder.Services.AddScoped<IAuditRepository, AuditRepository>();
 builder.Services.AddScoped<IApplicantDeletionRequestRepository, ApplicantDeletionRequestRepository>();
 builder.Services.AddScoped<SelectionService>();
+builder.Services.AddScoped<ExcelExportService>();
 builder.Services.AddScoped<JwtService>();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
@@ -150,7 +152,7 @@ using (var scope = app.Services.CreateScope())
             Role = UserRoles.SuperAdmin,
             IsActive = true,
             MustChangePassword = false
-        }, [], []);
+        });
     }
 }
 

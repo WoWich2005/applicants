@@ -4,7 +4,6 @@ import { useEffect, useState } from "react"
 import { specialtiesApi } from "../../api/specialtiesApi"
 import { departmentsApi } from "../../api/departmentsApi"
 import { facultiesApi } from "../../api/facultyApi"
-import { useAuth } from "../../contexts/AuthContext"
 import { useTranslation } from "react-i18next"
 
 function SpecialtyForm(/** @type {any} */ props) {
@@ -12,10 +11,6 @@ function SpecialtyForm(/** @type {any} */ props) {
   const [messageApi, contextHolder] = message.useMessage()
   const [form] = Form.useForm()
   const [isLoading, setIsLoading] = useState(false)
-
-  const { auth } = useAuth()
-  const isFacultyManager = auth?.role === 'FacultyManager'
-  const managerFacultyId = isFacultyManager ? auth?.facultyId : null
 
   const [faculties, setFaculties] = useState(/** @type {Array<{id: number, name: string}>} */ ([]))
   const [isFacultiesLoading, setIsFacultiesLoading] = useState(true)
@@ -64,21 +59,10 @@ function SpecialtyForm(/** @type {any} */ props) {
     fetchInitialDepartments()
   }, [props.initialValues, isFacultiesLoading])
 
-  // For new form: set field values; for FacultyManager: auto-load their departments
   useEffect(() => {
     if (isFacultiesLoading) return
-
     if (!props.initialValues?.departmentId) {
       form.setFieldsValue(props.initialValues)
-    }
-
-    if (managerFacultyId && !props.initialValues?.departmentId) {
-      setSelectedFacultyId(managerFacultyId)
-      setIsDepartmentsLoading(true)
-      departmentsApi.getByFacultyId(managerFacultyId)
-        .then(r => setDepartments(r.data))
-        .catch(() => messageApi.error(t('specialty.form.fetchDepartmentsError')))
-        .finally(() => setIsDepartmentsLoading(false))
     }
   }, [isFacultiesLoading])
 
@@ -120,8 +104,8 @@ function SpecialtyForm(/** @type {any} */ props) {
       }
 
       form.resetFields()
-      setSelectedFacultyId(managerFacultyId ?? null)
-      if (!managerFacultyId) setDepartments([])
+      setSelectedFacultyId(null)
+      setDepartments([])
     } catch (err) {
       const serverMessage = err?.response?.data?.message
       messageApi.error(serverMessage ?? t('specialty.form.saveError'))
@@ -161,7 +145,7 @@ function SpecialtyForm(/** @type {any} */ props) {
                 value={selectedFacultyId}
                 onChange={handleFacultyChange}
                 placeholder={t('specialty.form.facultyPlaceholder')}
-                disabled={isFacultyManager || !!props.readOnly}
+                disabled={!!props.readOnly}
               >
                 {faculties.map(faculty => (
                   <Select.Option value={faculty.id} key={faculty.id}>

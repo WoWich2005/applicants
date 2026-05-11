@@ -18,7 +18,7 @@ namespace bntuapplicants_backend.Data.Repositories
             _connectionString = configuration.GetConnectionString("DefaultConnection")!;
         }
 
-        public async Task<PagedResponse<AuditLogEntry>> GetEntityHistoryAsync(string entityType, string entityId, int page, int pageSize, string? username = null, string? action = null, string? logEntityType = null, DateTime? from = null, DateTime? to = null)
+        public async Task<PagedResponse<AuditLogEntry>> GetEntityHistoryAsync(string entityType, string entityId, int page, int pageSize, string? username = null, string? action = null, string? logEntityType = null, DateTime? from = null, DateTime? to = null, string? sortOrder = null)
         {
             int offset = (page - 1) * pageSize;
             var items = new List<AuditLogEntry>();
@@ -112,6 +112,7 @@ namespace bntuapplicants_backend.Data.Repositories
             string whereClause = extraConditions.Count > 0
                 ? baseClause + " AND " + string.Join(" AND ", extraConditions)
                 : baseClause;
+            string orderDir = sortOrder == "ascend" ? "ASC" : "DESC";
 
             void AddParams(NpgsqlCommand cmd)
             {
@@ -159,7 +160,7 @@ namespace bntuapplicants_backend.Data.Repositories
                 SELECT id, created_at, user_id, username, action, entity_type, entity_id, changes::text
                 FROM audit_log
                 WHERE {whereClause}
-                ORDER BY created_at DESC
+                ORDER BY created_at {orderDir}
                 LIMIT @PageSize OFFSET @Offset";
 
             using var selectCmd = new NpgsqlCommand(selectSql, conn);
@@ -174,7 +175,7 @@ namespace bntuapplicants_backend.Data.Repositories
             return new PagedResponse<AuditLogEntry> { Items = items, Total = total };
         }
 
-        public async Task<PagedResponse<AuditLogEntry>> GetAuditLogPagedAsync(int page, int pageSize, string? username = null, string? entityType = null, string? action = null, string? entityId = null, DateTime? from = null, DateTime? to = null)
+        public async Task<PagedResponse<AuditLogEntry>> GetAuditLogPagedAsync(int page, int pageSize, string? username = null, string? entityType = null, string? action = null, string? entityId = null, DateTime? from = null, DateTime? to = null, string? sortOrder = null)
         {
             int offset = (page - 1) * pageSize;
             var items = new List<AuditLogEntry>();
@@ -189,6 +190,7 @@ namespace bntuapplicants_backend.Data.Repositories
             if (to.HasValue) conditions.Add("created_at <= @To");
 
             string where = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : "";
+            string orderDir = sortOrder == "ascend" ? "ASC" : "DESC";
 
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -202,7 +204,7 @@ namespace bntuapplicants_backend.Data.Repositories
             var selectSql = $@"
                 SELECT id, created_at, user_id, username, action, entity_type, entity_id, changes::text
                 FROM audit_log {where}
-                ORDER BY created_at DESC
+                ORDER BY created_at {orderDir}
                 LIMIT @PageSize OFFSET @Offset";
 
             using var selectCmd = new NpgsqlCommand(selectSql, conn);
@@ -217,7 +219,7 @@ namespace bntuapplicants_backend.Data.Repositories
             return new PagedResponse<AuditLogEntry> { Items = items, Total = total };
         }
 
-        public async Task<PagedResponse<AuthLogEntry>> GetAuthLogPagedAsync(int page, int pageSize, string? userId = null, string? username = null, string? eventType = null, string? ipAddress = null, string? failureReason = null, string? userAgent = null, DateTime? from = null, DateTime? to = null)
+        public async Task<PagedResponse<AuthLogEntry>> GetAuthLogPagedAsync(int page, int pageSize, string? userId = null, string? username = null, string? eventType = null, string? ipAddress = null, string? failureReason = null, string? userAgent = null, DateTime? from = null, DateTime? to = null, string? sortOrder = null)
         {
             int offset = (page - 1) * pageSize;
             var items = new List<AuthLogEntry>();
@@ -234,6 +236,7 @@ namespace bntuapplicants_backend.Data.Repositories
             if (to.HasValue) conditions.Add("created_at <= @To");
 
             string where = conditions.Count > 0 ? "WHERE " + string.Join(" AND ", conditions) : "";
+            string orderDir = sortOrder == "ascend" ? "ASC" : "DESC";
 
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
@@ -259,7 +262,7 @@ namespace bntuapplicants_backend.Data.Repositories
             var selectSql = $@"
                 SELECT id, created_at, user_id, username, event_type, failure_reason, host(ip_address), user_agent
                 FROM auth_log {where}
-                ORDER BY created_at DESC
+                ORDER BY created_at {orderDir}
                 LIMIT @PageSize OFFSET @Offset";
 
             using var selectCmd = new NpgsqlCommand(selectSql, conn);
@@ -383,34 +386,20 @@ namespace bntuapplicants_backend.Data.Repositories
             return (!missingCriteria.Any() && !invalidPriorities, missingCriteria, invalidPriorities);
         }
 
-        public async Task<AlertsSummaryDto> GetAlertsSummaryAsync(int? facultyId, List<int> facultyAccessIds, List<int> specificityIds)
+        public async Task<AlertsSummaryDto> GetAlertsSummaryAsync()
         {
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
-
-            string facultyFilter = BuildFacultyFilter(facultyId, facultyAccessIds, specificityIds);
 
             var sql = $@"
                 SELECT
                     (SELECT COUNT(DISTINCT a.id)
                      FROM applicants a
-                     {(string.IsNullOrEmpty(facultyFilter) ? "" : $@"
-                     JOIN applicantadmissioncategories aac ON aac.applicantid = a.id
-                     JOIN admissioncategories ac ON ac.id = aac.admissioncategoryid
-                     JOIN competitionlists cl ON cl.id = ac.competitionlistid
-                     JOIN specialties s ON s.id = cl.specialtyid
-                     JOIN departments d ON d.id = s.departmentid")}
-                     WHERE a.validated = false AND {NotSoftDeleted} {facultyFilter}
+                     WHERE a.validated = false AND {NotSoftDeleted}
                     ) AS unvalidated_count,
 
                     (SELECT COUNT(DISTINCT a.id)
                      FROM applicants a
-                     {(string.IsNullOrEmpty(facultyFilter) ? "" : $@"
-                     JOIN applicantadmissioncategories aac2 ON aac2.applicantid = a.id
-                     JOIN admissioncategories ac2 ON ac2.id = aac2.admissioncategoryid
-                     JOIN competitionlists cl2 ON cl2.id = ac2.competitionlistid
-                     JOIN specialties s2 ON s2.id = cl2.specialtyid
-                     JOIN departments d2 ON d2.id = s2.departmentid")}
                      WHERE EXISTS (
                          SELECT 1
                          FROM applicantadmissioncategories aac3
@@ -420,34 +409,22 @@ namespace bntuapplicants_backend.Data.Repositories
                          AND ecgi.criteriaid NOT IN (
                              SELECT aev.evaluationcriteriaid FROM applicantevaluationvalues aev WHERE aev.applicantid = a.id
                          )
-                     ) {(string.IsNullOrEmpty(facultyFilter) ? "" : $"AND (d2.facultyid = ANY(@FacultyIds) OR s2.id = ANY(@SpecialtyIds))")}
+                     )
                     ) AS missing_criteria_count,
 
                     (SELECT COUNT(DISTINCT a.id)
                      FROM applicants a
-                     {(string.IsNullOrEmpty(facultyFilter) ? "" : $@"
-                     JOIN applicantadmissioncategories aac4 ON aac4.applicantid = a.id
-                     JOIN admissioncategories ac4 ON ac4.id = aac4.admissioncategoryid
-                     JOIN competitionlists cl4 ON cl4.id = ac4.competitionlistid
-                     JOIN specialties s4 ON s4.id = cl4.specialtyid
-                     JOIN departments d4 ON d4.id = s4.departmentid")}
                      WHERE EXISTS (
                          SELECT 1 FROM applicantadmissioncategories sub
                          WHERE sub.applicantid = a.id
                          GROUP BY sub.applicantid
                          HAVING COUNT(*) > 0
                            AND (MAX(sub.selectionpriority) != COUNT(*) OR MIN(sub.selectionpriority) != 1)
-                     ) {(string.IsNullOrEmpty(facultyFilter) ? "" : $"AND (d4.facultyid = ANY(@FacultyIds) OR s4.id = ANY(@SpecialtyIds))")}
+                     )
                     ) AS invalid_priorities_count,
 
                     (SELECT COUNT(DISTINCT a.id)
                      FROM applicants a
-                     {(string.IsNullOrEmpty(facultyFilter) ? "" : $@"
-                     JOIN applicantadmissioncategories aac5 ON aac5.applicantid = a.id
-                     JOIN admissioncategories ac5 ON ac5.id = aac5.admissioncategoryid
-                     JOIN competitionlists cl5 ON cl5.id = ac5.competitionlistid
-                     JOIN specialties s5 ON s5.id = cl5.specialtyid
-                     JOIN departments d5 ON d5.id = s5.departmentid")}
                      WHERE (
                          EXISTS (
                              SELECT 1
@@ -465,7 +442,7 @@ namespace bntuapplicants_backend.Data.Repositories
                              GROUP BY sub6.applicantid
                              HAVING MAX(sub6.selectionpriority) != COUNT(*) OR MIN(sub6.selectionpriority) != 1
                          )
-                     ) {(string.IsNullOrEmpty(facultyFilter) ? "" : $"AND (d5.facultyid = ANY(@FacultyIds) OR s5.id = ANY(@SpecialtyIds))")}
+                     )
                     ) AS incomplete_count,
 
                     (SELECT COUNT(*) FROM (
@@ -492,15 +469,6 @@ namespace bntuapplicants_backend.Data.Repositories
                     ) AS pending_deletions_count";
 
             using var cmd = new NpgsqlCommand(sql, conn);
-            if (!string.IsNullOrEmpty(facultyFilter))
-            {
-                var allFacultyIds = new List<int>();
-                if (facultyId.HasValue) allFacultyIds.Add(facultyId.Value);
-                allFacultyIds.AddRange(facultyAccessIds);
-                cmd.Parameters.AddWithValue("@FacultyIds", allFacultyIds.Distinct().ToArray());
-                cmd.Parameters.AddWithValue("@SpecialtyIds", specificityIds.ToArray());
-            }
-
             using var reader = await cmd.ExecuteReaderAsync();
             if (await reader.ReadAsync())
             {
@@ -519,36 +487,26 @@ namespace bntuapplicants_backend.Data.Repositories
             return new AlertsSummaryDto();
         }
 
-        public async Task<PagedResponse<UnvalidatedApplicantDto>> GetUnvalidatedApplicantsAsync(int page, int pageSize, int? facultyId, List<int> facultyAccessIds, List<int> specialtyIds, string? status = null, string? search = null)
+        public async Task<PagedResponse<UnvalidatedApplicantDto>> GetUnvalidatedApplicantsAsync(int page, int pageSize, string? status = null, string? search = null)
         {
             int offset = (page - 1) * pageSize;
             var items = new List<UnvalidatedApplicantDto>();
             int total = 0;
 
-            string facultyFilter = BuildFacultyFilter(facultyId, facultyAccessIds, specialtyIds);
             string statusFilter = status == "validated" ? "AND a.validated = true"
                 : status == "unvalidated" ? "AND a.validated = false"
                 : "";
             string searchFilter = !string.IsNullOrWhiteSpace(search) ? "AND (LOWER(a.name) LIKE @SearchPattern OR LOWER(a.externalid) LIKE @SearchPattern)" : "";
-
-            string joins = string.IsNullOrEmpty(facultyFilter) ? "" : @"
-                JOIN applicantadmissioncategories aac ON aac.applicantid = a.id
-                JOIN admissioncategories ac ON ac.id = aac.admissioncategoryid
-                JOIN competitionlists cl ON cl.id = ac.competitionlistid
-                JOIN specialties s ON s.id = cl.specialtyid
-                JOIN departments d ON d.id = s.departmentid";
 
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
 
             var countSql = $@"SELECT COUNT(DISTINCT a.id)
                 FROM applicants a
-                {joins}
-                WHERE {NotSoftDeleted} {facultyFilter} {statusFilter} {searchFilter}";
+                WHERE {NotSoftDeleted} {statusFilter} {searchFilter}";
 
             using (var cmd = new NpgsqlCommand(countSql, conn))
             {
-                AddFacultyParams(cmd, facultyId, facultyAccessIds, specialtyIds, facultyFilter);
                 if (!string.IsNullOrWhiteSpace(search)) cmd.Parameters.AddWithValue("@SearchPattern", $"%{search.ToLower()}%");
                 total = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
@@ -556,13 +514,11 @@ namespace bntuapplicants_backend.Data.Repositories
             var selectSql = $@"
                 SELECT DISTINCT a.id, a.externalid, a.name, a.validated
                 FROM applicants a
-                {joins}
-                WHERE {NotSoftDeleted} {facultyFilter} {statusFilter} {searchFilter}
+                WHERE {NotSoftDeleted} {statusFilter} {searchFilter}
                 ORDER BY a.name
                 LIMIT @PageSize OFFSET @Offset";
 
             using var selectCmd = new NpgsqlCommand(selectSql, conn);
-            AddFacultyParams(selectCmd, facultyId, facultyAccessIds, specialtyIds, facultyFilter);
             if (!string.IsNullOrWhiteSpace(search)) selectCmd.Parameters.AddWithValue("@SearchPattern", $"%{search.ToLower()}%");
             selectCmd.Parameters.AddWithValue("@PageSize", pageSize);
             selectCmd.Parameters.AddWithValue("@Offset", offset);
@@ -583,19 +539,12 @@ namespace bntuapplicants_backend.Data.Repositories
         }
 
         public async Task<PagedResponse<IncompleteApplicantDto>> GetIncompleteApplicantsAsync(
-            int page, int pageSize, int? facultyId, List<int> facultyAccessIds, List<int> specialtyIds, string? search = null)
+            int page, int pageSize, string? search = null)
         {
             int offset = (page - 1) * pageSize;
-            string facultyFilter = BuildFacultyFilter(facultyId, facultyAccessIds, specialtyIds);
             string searchFilter = !string.IsNullOrWhiteSpace(search)
                 ? "AND (LOWER(a.name) LIKE @SearchPattern OR LOWER(a.externalid) LIKE @SearchPattern)"
                 : "";
-            string joins = string.IsNullOrEmpty(facultyFilter) ? "" : @"
-                JOIN applicantadmissioncategories aac_f ON aac_f.applicantid = a.id
-                JOIN admissioncategories ac_f ON ac_f.id = aac_f.admissioncategoryid
-                JOIN competitionlists cl_f ON cl_f.id = ac_f.competitionlistid
-                JOIN specialties s_f ON s_f.id = cl_f.specialtyid
-                JOIN departments d_f ON d_f.id = s_f.departmentid";
 
             string whereClause = $@"WHERE (
                     EXISTS (
@@ -614,16 +563,15 @@ namespace bntuapplicants_backend.Data.Repositories
                         GROUP BY sub2.applicantid
                         HAVING MAX(sub2.selectionpriority) != COUNT(*) OR MIN(sub2.selectionpriority) != 1
                     )
-                ) {facultyFilter} {searchFilter}";
+                ) {searchFilter}";
 
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var countSql = $"SELECT COUNT(DISTINCT a.id) FROM applicants a {joins} {whereClause}";
+            var countSql = $"SELECT COUNT(DISTINCT a.id) FROM applicants a {whereClause}";
             int total;
             using (var countCmd = new NpgsqlCommand(countSql, conn))
             {
-                AddFacultyParams(countCmd, facultyId, facultyAccessIds, specialtyIds, facultyFilter);
                 if (!string.IsNullOrWhiteSpace(search)) countCmd.Parameters.AddWithValue("@SearchPattern", $"%{search.ToLower()}%");
                 total = Convert.ToInt32(await countCmd.ExecuteScalarAsync());
             }
@@ -636,7 +584,7 @@ namespace bntuapplicants_backend.Data.Repositories
                      GROUP BY sub.applicantid
                      HAVING COUNT(*) > 0 AND (MAX(sub.selectionpriority) != COUNT(*) OR MIN(sub.selectionpriority) != 1)
                     ) AS has_invalid_priorities
-                FROM applicants a {joins}
+                FROM applicants a
                 {whereClause}
                 ORDER BY a.name
                 LIMIT @PageSize OFFSET @Offset";
@@ -644,7 +592,6 @@ namespace bntuapplicants_backend.Data.Repositories
             var applicantIds = new List<(int id, string externalId, string name, bool invalidPriorities)>();
             using (var cmd = new NpgsqlCommand(selectSql, conn))
             {
-                AddFacultyParams(cmd, facultyId, facultyAccessIds, specialtyIds, facultyFilter);
                 if (!string.IsNullOrWhiteSpace(search)) cmd.Parameters.AddWithValue("@SearchPattern", $"%{search.ToLower()}%");
                 cmd.Parameters.AddWithValue("@PageSize", pageSize);
                 cmd.Parameters.AddWithValue("@Offset", offset);
@@ -821,24 +768,6 @@ namespace bntuapplicants_backend.Data.Repositories
             if (!string.IsNullOrWhiteSpace(faculty)) cmd.Parameters.AddWithValue("@FacultyPattern", $"%{faculty.ToLower()}%");
             if (!string.IsNullOrWhiteSpace(department)) cmd.Parameters.AddWithValue("@DepartmentPattern", $"%{department.ToLower()}%");
             if (!string.IsNullOrWhiteSpace(specialty)) cmd.Parameters.AddWithValue("@SpecialtyPattern", $"%{specialty.ToLower()}%");
-        }
-
-        private static string BuildFacultyFilter(int? facultyId, List<int> facultyAccessIds, List<int> specialtyIds)
-        {
-            bool hasFaculty = facultyId.HasValue || facultyAccessIds.Count > 0;
-            bool hasSpecialty = specialtyIds.Count > 0;
-            if (!hasFaculty && !hasSpecialty) return "";
-            return "AND (d.facultyid = ANY(@FacultyIds) OR s.id = ANY(@SpecialtyIds))";
-        }
-
-        private static void AddFacultyParams(NpgsqlCommand cmd, int? facultyId, List<int> facultyAccessIds, List<int> specialtyIds, string filter)
-        {
-            if (string.IsNullOrEmpty(filter)) return;
-            var allFacultyIds = new List<int>();
-            if (facultyId.HasValue) allFacultyIds.Add(facultyId.Value);
-            allFacultyIds.AddRange(facultyAccessIds);
-            cmd.Parameters.AddWithValue("@FacultyIds", allFacultyIds.Distinct().ToArray());
-            cmd.Parameters.AddWithValue("@SpecialtyIds", specialtyIds.ToArray());
         }
 
         private static void AddFilterParams(NpgsqlCommand cmd, string? username, string? entityType, string? action, string? entityId, DateTime? from, DateTime? to)

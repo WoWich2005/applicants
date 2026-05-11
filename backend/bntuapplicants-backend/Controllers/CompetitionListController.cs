@@ -3,6 +3,7 @@ using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Requests;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
+using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -17,15 +18,18 @@ namespace bntuapplicants_backend.Controllers
     {
         private readonly ICompetitionListRepository _repository;
         private readonly ISpecialtyRepository _specialtyRepository;
+        private readonly SelectionService _selectionService;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
         public CompetitionListController(
             ICompetitionListRepository repository,
             ISpecialtyRepository specialtyRepository,
+            SelectionService selectionService,
             IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _specialtyRepository = specialtyRepository;
+            _selectionService = selectionService;
             _localizer = localizer;
         }
 
@@ -71,7 +75,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPost]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -102,7 +106,7 @@ namespace bntuapplicants_backend.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -130,11 +134,13 @@ namespace bntuapplicants_backend.Controllers
             if (!success)
                 return StatusCode(500, new { message = (string)_localizer["CompetitionList.UpdateError"] });
 
+            await _selectionService.RecalculateAllAsync();
+
             return NoContent();
         }
 
         [HttpDelete("{id}")]
-        [Authorize(Roles = UserRoles.SuperAdmin + "," + UserRoles.FacultyManager)]
+        [Authorize(Roles = UserRoles.WriteStructure)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
@@ -146,6 +152,8 @@ namespace bntuapplicants_backend.Controllers
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
                 return StatusCode(500, new { message = (string)_localizer["CompetitionList.DeleteError"] });
+
+            await _selectionService.RecalculateAllAsync();
 
             return NoContent();
         }

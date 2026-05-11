@@ -30,7 +30,7 @@ namespace bntuapplicants_backend.Data.Repositories
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
             using var cmd = new NpgsqlCommand(
-                "SELECT id, username, password_hash, role, faculty_id, is_active, must_change_password, created_at FROM users WHERE id = @Id",
+                "SELECT id, username, password_hash, role, is_active, must_change_password, created_at FROM users WHERE id = @Id",
                 connection);
             cmd.Parameters.AddWithValue("@Id", id);
             using var reader = await cmd.ExecuteReaderAsync();
@@ -44,7 +44,7 @@ namespace bntuapplicants_backend.Data.Repositories
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
             using var cmd = new NpgsqlCommand(
-                "SELECT id, username, password_hash, role, faculty_id, is_active, must_change_password, created_at FROM users WHERE username = @Username",
+                "SELECT id, username, password_hash, role, is_active, must_change_password, created_at FROM users WHERE username = @Username",
                 connection);
             cmd.Parameters.AddWithValue("@Username", username);
             using var reader = await cmd.ExecuteReaderAsync();
@@ -53,7 +53,7 @@ namespace bntuapplicants_backend.Data.Repositories
             return null;
         }
 
-        public async Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null, string? idSearch = null)
+        public async Task<(List<UserResponseDto> Items, int Total)> GetPagedAsync(int page, int pageSize, string? search, string? role = null, bool? isActive = null, string? idSearch = null, string? sortField = null, string? sortOrder = null)
         {
             var items = new List<UserResponseDto>();
             int total = 0;
@@ -81,12 +81,10 @@ namespace bntuapplicants_backend.Data.Repositories
             }
 
             string query = $@"
-                SELECT u.id, u.username, u.role, u.faculty_id, f.name as faculty_name,
-                       u.is_active, u.created_at
+                SELECT u.id, u.username, u.role, u.is_active, u.created_at
                 FROM users u
-                LEFT JOIN faculties f ON u.faculty_id = f.id
                 {whereClause}
-                ORDER BY u.username ASC
+                ORDER BY {(sortField == "id" ? $"u.id {(sortOrder == "descend" ? "DESC" : "ASC")}" : "u.username ASC")}
                 LIMIT @PageSize OFFSET @Offset";
 
             using (var cmd = new NpgsqlCommand(query, connection))
@@ -106,18 +104,10 @@ namespace bntuapplicants_backend.Data.Repositories
                         Id = reader.GetInt32(0),
                         Username = reader.GetString(1),
                         Role = reader.GetString(2),
-                        FacultyId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
-                        FacultyName = reader.IsDBNull(4) ? null : reader.GetString(4),
-                        IsActive = reader.GetBoolean(5),
-                        CreatedAt = reader.GetDateTime(6)
+                        IsActive = reader.GetBoolean(3),
+                        CreatedAt = reader.GetDateTime(4)
                     });
                 }
-            }
-
-            foreach (var item in items)
-            {
-                item.SpecialtyIds = await GetSpecialtyIdsAsync(item.Id, connection);
-                item.FacultyAccessIds = await GetFacultyAccessIdsAsync(item.Id, connection);
             }
 
             return (items, total);
@@ -128,12 +118,7 @@ namespace bntuapplicants_backend.Data.Repositories
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
 
-            string query = @"
-                SELECT u.id, u.username, u.role, u.faculty_id, f.name as faculty_name,
-                       u.is_active, u.created_at
-                FROM users u
-                LEFT JOIN faculties f ON u.faculty_id = f.id
-                WHERE u.id = @Id";
+            string query = "SELECT id, username, role, is_active, created_at FROM users WHERE id = @Id";
 
             using var cmd = new NpgsqlCommand(query, connection);
             cmd.Parameters.AddWithValue("@Id", id);
@@ -141,25 +126,17 @@ namespace bntuapplicants_backend.Data.Repositories
             using var reader = await cmd.ExecuteReaderAsync();
             if (!await reader.ReadAsync()) return null;
 
-            var dto = new UserResponseDto
+            return new UserResponseDto
             {
                 Id = reader.GetInt32(0),
                 Username = reader.GetString(1),
                 Role = reader.GetString(2),
-                FacultyId = reader.IsDBNull(3) ? null : reader.GetInt32(3),
-                FacultyName = reader.IsDBNull(4) ? null : reader.GetString(4),
-                IsActive = reader.GetBoolean(5),
-                CreatedAt = reader.GetDateTime(6)
+                IsActive = reader.GetBoolean(3),
+                CreatedAt = reader.GetDateTime(4)
             };
-            reader.Close();
-
-            dto.SpecialtyIds = await GetSpecialtyIdsAsync(id, connection);
-            dto.FacultyAccessIds = await GetFacultyAccessIdsAsync(id, connection);
-
-            return dto;
         }
 
-        public async Task<User> CreateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds)
+        public async Task<User> CreateAsync(User user)
         {
             using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -167,21 +144,17 @@ namespace bntuapplicants_backend.Data.Repositories
 
             int newId;
             using (var cmd = new NpgsqlCommand(@"
-                INSERT INTO users (username, password_hash, role, faculty_id, is_active, must_change_password)
-                VALUES (@Username, @PasswordHash, @Role, @FacultyId, @IsActive, @MustChangePassword)
+                INSERT INTO users (username, password_hash, role, is_active, must_change_password)
+                VALUES (@Username, @PasswordHash, @Role, @IsActive, @MustChangePassword)
                 RETURNING id", connection, transaction))
             {
                 cmd.Parameters.AddWithValue("@Username", user.Username);
                 cmd.Parameters.AddWithValue("@PasswordHash", user.PasswordHash);
                 cmd.Parameters.AddWithValue("@Role", user.Role);
-                cmd.Parameters.AddWithValue("@FacultyId", user.FacultyId.HasValue ? user.FacultyId.Value : DBNull.Value);
                 cmd.Parameters.AddWithValue("@IsActive", user.IsActive);
                 cmd.Parameters.AddWithValue("@MustChangePassword", user.MustChangePassword);
                 newId = Convert.ToInt32(await cmd.ExecuteScalarAsync());
             }
-
-            await SetSpecialtyAccessAsync(newId, specialtyIds, connection, transaction);
-            await SetFacultyAccessAsync(newId, facultyAccessIds, connection, transaction);
 
             user.Id = newId;
 
@@ -190,11 +163,8 @@ namespace bntuapplicants_backend.Data.Repositories
                 user.Id,
                 user.Username,
                 user.Role,
-                user.FacultyId,
                 user.IsActive,
-                user.MustChangePassword,
-                SpecialtyIds = specialtyIds,
-                FacultyAccessIds = facultyAccessIds
+                user.MustChangePassword
             };
             await _auditLogger.LogCreateAsync("user", newId.ToString(), created, tx: transaction);
 
@@ -202,7 +172,7 @@ namespace bntuapplicants_backend.Data.Repositories
             return user;
         }
 
-        public async Task<bool> UpdateAsync(User user, List<int> specialtyIds, List<int> facultyAccessIds)
+        public async Task<bool> UpdateAsync(User user)
         {
             var before = await GetByIdAsync(user.Id);
 
@@ -212,12 +182,11 @@ namespace bntuapplicants_backend.Data.Repositories
 
             int rows;
             using (var cmd = new NpgsqlCommand(@"
-                UPDATE users SET username = @Username, role = @Role, faculty_id = @FacultyId
+                UPDATE users SET username = @Username, role = @Role
                 WHERE id = @Id", connection, transaction))
             {
                 cmd.Parameters.AddWithValue("@Username", user.Username);
                 cmd.Parameters.AddWithValue("@Role", user.Role);
-                cmd.Parameters.AddWithValue("@FacultyId", user.FacultyId.HasValue ? user.FacultyId.Value : DBNull.Value);
                 cmd.Parameters.AddWithValue("@Id", user.Id);
                 rows = await cmd.ExecuteNonQueryAsync();
             }
@@ -230,29 +199,10 @@ namespace bntuapplicants_backend.Data.Repositories
                 await cmd.ExecuteNonQueryAsync();
             }
 
-            await SetSpecialtyAccessAsync(user.Id, specialtyIds, connection, transaction);
-            await SetFacultyAccessAsync(user.Id, facultyAccessIds, connection, transaction);
-
             if (rows > 0)
             {
-                var afterSnapshot = new
-                {
-                    user.Id,
-                    user.Username,
-                    user.Role,
-                    user.FacultyId,
-                    SpecialtyIds = specialtyIds,
-                    FacultyAccessIds = facultyAccessIds
-                };
-                var beforeSnapshot = before == null ? (object)new { } : new
-                {
-                    before.Id,
-                    before.Username,
-                    before.Role,
-                    before.FacultyId,
-                    SpecialtyIds = new List<int>(),
-                    FacultyAccessIds = new List<int>()
-                };
+                var afterSnapshot = new { user.Id, user.Username, user.Role };
+                var beforeSnapshot = before == null ? (object)new { } : new { before.Id, before.Username, before.Role };
                 var diff = JsonDiff.Compute(beforeSnapshot, afterSnapshot);
                 await _auditLogger.LogUpdateAsync("user", user.Id.ToString(), diff, tx: transaction);
             }
@@ -316,84 +266,15 @@ namespace bntuapplicants_backend.Data.Repositories
             return await cmd.ExecuteNonQueryAsync() > 0;
         }
 
-        public async Task<List<int>> GetSpecialtyIdsAsync(int userId)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-            return await GetSpecialtyIdsAsync(userId, connection);
-        }
-
-        public async Task<List<int>> GetFacultyAccessIdsAsync(int userId)
-        {
-            using var connection = new NpgsqlConnection(_connectionString);
-            await connection.OpenAsync();
-            return await GetFacultyAccessIdsAsync(userId, connection);
-        }
-
-        private static async Task<List<int>> GetSpecialtyIdsAsync(int userId, NpgsqlConnection connection)
-        {
-            var ids = new List<int>();
-            using var cmd = new NpgsqlCommand("SELECT specialty_id FROM user_specialty_access WHERE user_id = @UserId", connection);
-            cmd.Parameters.AddWithValue("@UserId", userId);
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-                ids.Add(reader.GetInt32(0));
-            return ids;
-        }
-
-        private static async Task<List<int>> GetFacultyAccessIdsAsync(int userId, NpgsqlConnection connection)
-        {
-            var ids = new List<int>();
-            using var cmd = new NpgsqlCommand("SELECT faculty_id FROM user_faculty_access WHERE user_id = @UserId", connection);
-            cmd.Parameters.AddWithValue("@UserId", userId);
-            using var reader = await cmd.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-                ids.Add(reader.GetInt32(0));
-            return ids;
-        }
-
-        private static async Task SetSpecialtyAccessAsync(int userId, List<int> specialtyIds, NpgsqlConnection connection, NpgsqlTransaction transaction)
-        {
-            using (var cmd = new NpgsqlCommand("DELETE FROM user_specialty_access WHERE user_id = @UserId", connection, transaction))
-            {
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                await cmd.ExecuteNonQueryAsync();
-            }
-            foreach (var sid in specialtyIds)
-            {
-                using var cmd = new NpgsqlCommand("INSERT INTO user_specialty_access (user_id, specialty_id) VALUES (@UserId, @SpecialtyId)", connection, transaction);
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                cmd.Parameters.AddWithValue("@SpecialtyId", sid);
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
-
-        private static async Task SetFacultyAccessAsync(int userId, List<int> facultyIds, NpgsqlConnection connection, NpgsqlTransaction transaction)
-        {
-            using (var cmd = new NpgsqlCommand("DELETE FROM user_faculty_access WHERE user_id = @UserId", connection, transaction))
-            {
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                await cmd.ExecuteNonQueryAsync();
-            }
-            foreach (var fid in facultyIds)
-            {
-                using var cmd = new NpgsqlCommand("INSERT INTO user_faculty_access (user_id, faculty_id) VALUES (@UserId, @FacultyId)", connection, transaction);
-                cmd.Parameters.AddWithValue("@UserId", userId);
-                cmd.Parameters.AddWithValue("@FacultyId", fid);
-                await cmd.ExecuteNonQueryAsync();
-            }
-        }
-
         private static User MapUser(NpgsqlDataReader reader) => new()
         {
             Id = reader.GetInt32(0),
             Username = reader.GetString(1),
             PasswordHash = reader.GetString(2),
             Role = reader.GetString(3),
-            FacultyId = reader.IsDBNull(4) ? null : reader.GetInt32(4),
-            IsActive = reader.GetBoolean(5),
-            MustChangePassword = reader.GetBoolean(6),
-            CreatedAt = reader.GetDateTime(7)
+            IsActive = reader.GetBoolean(4),
+            MustChangePassword = reader.GetBoolean(5),
+            CreatedAt = reader.GetDateTime(6)
         };
     }
 }

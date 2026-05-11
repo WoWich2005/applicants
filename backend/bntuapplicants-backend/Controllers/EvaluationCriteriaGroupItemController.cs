@@ -2,6 +2,7 @@ using bntuapplicants_backend.Data.Interfaces;
 using bntuapplicants_backend.Dtos.Requests;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
+using bntuapplicants_backend.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using System.Diagnostics.CodeAnalysis;
@@ -15,15 +16,18 @@ namespace bntuapplicants_backend.Controllers
     {
         private readonly IEvaluationCriteriaGroupItemRepository _repository;
         private readonly IEvaluationCriteriaGroupRepository _groupRepository;
+        private readonly SelectionService _selectionService;
         private readonly IStringLocalizer<SharedResources> _localizer;
 
         public EvaluationCriteriaGroupItemController(
             IEvaluationCriteriaGroupItemRepository repository,
             IEvaluationCriteriaGroupRepository groupRepository,
+            SelectionService selectionService,
             IStringLocalizer<SharedResources> localizer)
         {
             _repository = repository;
             _groupRepository = groupRepository;
+            _selectionService = selectionService;
             _localizer = localizer;
         }
 
@@ -80,6 +84,8 @@ namespace bntuapplicants_backend.Controllers
             if (createdRecord == null)
                 return StatusCode(500, new { message = (string)_localizer["EvaluationCriteriaGroupItem.CreateError"] });
 
+            await _selectionService.RecalculateAllAsync();
+
             return CreatedAtAction(
                 nameof(this.GetById),
                 new { id = createdRecord.Id },
@@ -111,6 +117,8 @@ namespace bntuapplicants_backend.Controllers
             if (!success)
                 return StatusCode(500, new { message = (string)_localizer["Record.UpdateError"] });
 
+            await _selectionService.RecalculateAllAsync();
+
             return NoContent();
         }
 
@@ -126,6 +134,8 @@ namespace bntuapplicants_backend.Controllers
             var deleted = await _repository.DeleteAsync(id);
             if (!deleted)
                 return StatusCode(500, new { message = (string)_localizer["Record.DeleteError"] });
+
+            await _selectionService.RecalculateAllAsync();
 
             return NoContent();
         }
