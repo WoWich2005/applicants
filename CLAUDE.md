@@ -43,17 +43,18 @@ Both Docker Compose setups require a `.env` file — copy `.env.example` to `.en
 ### Frontend (`/frontend/src`)
 
 - **Entry**: `main.jsx` → `AppRouter.jsx` handles all routes
-- **Providers**: `AuthContext` (JWT token, user role, faculty/specialty access) and `ThemeContext` (dark/light mode) wrap the app. Ant Design is configured in `GlobalProvider.jsx` with Russian locale (`ru_RU`) and primary color `#008a5e`.
+- **Providers**: `AuthContext` (JWT token, user role) and `ThemeContext` (dark/light mode) wrap the app. Ant Design is configured in `GlobalProvider.jsx` with Russian locale (`ru_RU`) and primary color `#008a5e`.
 - **API layer**: `api/index.js` creates an Axios instance targeting `http://localhost:5059/api/v1`. Each API module (`applicantsApi.js`, `authApi.js`, etc.) is a thin wrapper around this instance. The Axios interceptor attaches the JWT token from localStorage (`auth`) to every request.
-- **Auth storage**: Token payload includes `token`, `username`, `role`, `facultyId`, `specialtyIds`, and `facultyAccessIds`.
+- **Auth storage**: Token payload includes `token`, `username`, `role`.
 - **Route protection**: `ProtectedRoute.jsx` checks the user's role against allowed roles defined in `constants/routes.js`.
+- **Permission hook**: `usePermissions()` from `src/hooks/usePermissions.js` exposes `canWriteStructure`, `canWriteApplicants`, `canWriteAudit`, `canManageUsers` booleans — use these in components instead of raw role checks.
 
 ### Backend (`/backend/bntuapplicants-backend`)
 
 - **Entry**: `Program.cs` registers all services and repositories, configures JWT authentication, CORS, and Swagger, and seeds an initial SuperAdmin user on first run.
 - **Pattern**: Controller → Repository (no ORM — all database access is raw Npgsql queries). No service layer except for `JwtService.cs`, `SelectionService.cs` (admission selection algorithm), and `ExcelExportService.cs`.
 - **DTOs**: `Dtos/Requests/` for inbound data, `Dtos/Responses/` for outbound (including `PagedResponse<T>` for paginated endpoints).
-- **Roles**: Defined in `Constants/UserRoles.cs` — `SuperAdmin`, `FacultyManager`, `AdmissionsOperator`, `DataViewer`. The Users management page is restricted to `SuperAdmin` only.
+- **Roles**: Defined in `Constants/UserRoles.cs` — `SuperAdmin`, `DataAdministrator`, `Auditor`, `AdmissionsOperator`, `DataViewer`. Composite role strings `WriteStructure`, `WriteApplicants`, `WriteAudit` are used in `[Authorize(Roles = ...)]` attributes. The Users management page is restricted to `SuperAdmin` only.
 
 ### Database (`/liquibase`)
 
@@ -88,7 +89,7 @@ faculties → departments → specialties
 
 ### Критерии оценки
 
-- **evaluationcriteria** — оценочный параметр, конкретный измеримый показатель (например: "ЦТ Математика", "ЦТ Физика", "Средний балл аттестата"). Имеет `minvalue`, `maxvalue` и `type` (`higher_is_better` / `lower_is_better`). Тип определяет направление сортировки при ранжировании — запланированная фича, в текущей реализации `SelectionService` не учитывается (сортировка всегда по убыванию).
+- **evaluationcriteria** — оценочный параметр, конкретный измеримый показатель (например: "ЦТ Математика", "ЦТ Физика", "Средний балл аттестата"). Имеет `minvalue`, `maxvalue` и `type` (`higher_is_better` / `lower_is_better`). Тип учитывается алгоритмом отбора: для `lower_is_better` значение инвертируется (`-v`) при построении вектора оценок, что позволяет использовать единый компаратор (всегда по убыванию).
 - **evaluationcriteriagroups** — группа оценочных параметров, именованный набор оценочных параметров. Используется как конфигурация ранжирования для `admissioncategories`.
 - **evaluationcriteriagroupitems** — элемент связи группы оценочных параметров с оценочным параметром; поле `priority` задаёт порядок оценочных параметров при лексикографической сортировке (сначала самый важный критерий).
 
@@ -114,11 +115,15 @@ faculties → departments → specialties
 
 ### Пользователи и доступ
 
-- **users** — учётные записи операторов. Роли: `SuperAdmin`, `FacultyManager`, `AdmissionsOperator`, `DataViewer`. Поле `faculty_id` — необязательная привязка пользователя к конкретному факультету.
-- **user_faculty_access** — дополнительный список факультетов, к данным которых пользователь имеет доступ.
-- **user_specialty_access** — список специальностей, к которым пользователь имеет доступ (более гранулярный контроль, чем на уровне факультета).
+- **users** — учётные записи операторов. Роли: `SuperAdmin`, `DataAdministrator`, `Auditor`, `AdmissionsOperator`, `DataViewer`. Все роли читают все данные; роли отличаются только правами записи.
 
-  Оба списка передаются в JWT-токене (`facultyAccessIds`, `specialtyIds`) и используются фронтендом для фильтрации отображаемых данных.
+  | Роль | Права записи |
+  |------|-------------|
+  | `SuperAdmin` | всё, включая управление пользователями |
+  | `DataAdministrator` | всё кроме управления пользователями |
+  | `Auditor` | абитуриенты + аудит (валидация, подтверждение/отклонение удалений) |
+  | `AdmissionsOperator` | только абитуриенты и их заявки |
+  | `DataViewer` | только чтение |
 
 ## Аудит, валидация и soft-delete
 
@@ -127,7 +132,7 @@ faculties → departments → specialties
 Таблица `audit_log` (миграции 0015, 0018) хранит все изменения системы. Сервис `AuditLogger` (`Services/AuditLogger.cs`) — единая точка записи; инжектируется во все репозитории.
 
 - Действия: `create`, `update`, `delete`, `validate`, `invalidate`, `delete_confirmed`, `delete_rejected`.
-- Страница `/audit-log` — журнал с фильтрами по дате, действию, типу сущности, пользователю. Доступна `SuperAdmin`, `FacultyManager`, `DataViewer`.
+- Страница `/audit-log` — журнал с фильтрами по дате, действию, типу сущности, пользователю. Доступна всем аутентифицированным пользователям.
 - Журнал авторизации: таблица `auth_log` (миграция 0016), страница `/audit-log` (вкладка "Авторизация"), только `SuperAdmin`.
 
 ### Валидация данных абитуриентов (`applicant_validation`)
@@ -136,15 +141,15 @@ faculties → departments → specialties
 
 - При любом изменении данных абитуриента `AuditLogger.ResetValidationIfNeededAsync` автоматически сбрасывает `validated = false`.
 - Страница `/audit` — 4 вкладки: валидация данных абитуриентов, некорректные заявки, некорректные группы оценочных параметров, некорректные конкурсные списки.
-- Доступно `SuperAdmin` и `FacultyManager`.
+- Доступно `SuperAdmin`, `DataAdministrator`, `Auditor`.
 
 ### Soft-delete абитуриентов (`applicant_deletion_requests`)
 
 Таблица `applicant_deletion_requests` (миграция 0019): двухступенчатое удаление абитуриентов.
 
-- **Шаг 1:** Любой пользователь с правом удаления (`SuperAdmin`, `FacultyManager`, `AdmissionsOperator`) нажимает "Удалить" в `/applicants`. Вместо физического удаления создаётся запись `status='pending'`.
+- **Шаг 1:** Любой пользователь с правом удаления (`SuperAdmin`, `DataAdministrator`, `Auditor`, `AdmissionsOperator`) нажимает "Удалить" в `/applicants`. Вместо физического удаления создаётся запись `status='pending'`.
 - **Скрытие:** Абитуриент с `status` = `pending` или `confirmed` скрыт из всех обычных выборок (`ApplicantRepository` добавляет `NOT EXISTS` фильтр во все SELECT).
-- **Шаг 2 (на `/audit`, вкладка "Удаления на валидации"):** Только `SuperAdmin` видит таблицу pending-удалений и может:
+- **Шаг 2 (на `/audit`, вкладка "Удаления на валидации"):** `SuperAdmin`, `DataAdministrator`, `Auditor` видят таблицу pending-удалений и могут:
   - **Подтвердить** (`status='confirmed'`) — абитуриент остаётся скрыт навсегда. Лог: `delete_confirmed`.
   - **Отклонить** (`status='rejected'`) — абитуриент возвращается в активные, `applicant_validation` сбрасывается. Лог: `delete_rejected`. После `rejected` можно снова создать запрос на удаление.
 - `SelectionService` **не обновлён** под soft-delete — TODO в рамках переписывания алгоритма.
@@ -153,20 +158,20 @@ faculties → departments → specialties
 
 | Метод | Путь | Роли | Описание |
 |-------|------|------|----------|
-| GET | `/audit/log` | SA, FM, DV | Журнал действий |
-| GET | `/audit/auth-log` | SA | Журнал авторизации |
-| GET | `/audit/validation/{id}` | SA, FM | Статус валидации |
-| POST | `/audit/validation/{id}` | SA, FM | Валидировать |
-| DELETE | `/audit/validation/{id}` | SA, FM | Отозвать валидацию |
-| GET | `/audit/unvalidated` | SA, FM | Список абитуриентов (с фильтром по статусу валидации) |
-| GET | `/audit/incomplete` | SA, FM | Абитуриенты с неполными данными |
-| GET | `/audit/invalid-criteria-groups` | SA, FM | Некорректные группы |
-| GET | `/audit/invalid-admission-categories` | SA, FM | Некорректные конкурсные списки |
-| GET | `/audit/pending-deletions` | SA | Запросы на удаление абитуриентов |
-| POST | `/audit/pending-deletions/{id}/confirm` | SA | Подтвердить удаление |
-| POST | `/audit/pending-deletions/{id}/reject` | SA | Отклонить удаление |
+| GET | `/audit/log` | все аутентифицированные | Журнал действий |
+| GET | `/audit/auth-log` | SA, DA, AU | Журнал авторизации |
+| GET | `/audit/validation/{id}` | SA, DA, AU | Статус валидации |
+| POST | `/audit/validation/{id}` | SA, DA, AU | Валидировать |
+| DELETE | `/audit/validation/{id}` | SA, DA, AU | Отозвать валидацию |
+| GET | `/audit/unvalidated` | SA, DA, AU | Список абитуриентов (с фильтром по статусу валидации) |
+| GET | `/audit/incomplete` | SA, DA, AU | Абитуриенты с неполными данными |
+| GET | `/audit/invalid-criteria-groups` | SA, DA, AU | Некорректные группы |
+| GET | `/audit/invalid-admission-categories` | SA, DA, AU | Некорректные конкурсные списки |
+| GET | `/audit/pending-deletions` | SA, DA, AU | Запросы на удаление абитуриентов |
+| POST | `/audit/pending-deletions/{id}/confirm` | SA, DA, AU | Подтвердить удаление |
+| POST | `/audit/pending-deletions/{id}/reject` | SA, DA, AU | Отклонить удаление |
 
-SA = SuperAdmin, FM = FacultyManager, DV = DataViewer.
+SA = SuperAdmin, DA = DataAdministrator, AU = Auditor.
 
 ## Internationalization (i18n)
 
