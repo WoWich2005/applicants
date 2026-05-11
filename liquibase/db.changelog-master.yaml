@@ -174,3 +174,17 @@ databaseChangeLog:
         - sqlFile:
             path: sql/0025_drop_role_from_audit_log.sql
             relativeToChangelogFile: true
+  - changeSet:
+      id: "0026-simplify-roles"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0026_simplify_roles.sql
+            relativeToChangelogFile: true
+  - changeSet:
+      id: "0027-unique-applicant-evaluation-value"
+      author: "init"
+      changes:
+        - sqlFile:
+            path: sql/0027_unique_applicant_evaluation_value.sql
+            relativeToChangelogFile: true

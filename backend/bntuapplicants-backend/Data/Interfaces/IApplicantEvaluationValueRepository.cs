@@ -6,6 +6,7 @@ namespace bntuapplicants_backend.Data.Interfaces
     public interface IApplicantEvaluationValueRepository
     {
         Task<ApplicantEvaluationValue?> CreateAsync(ApplicantEvaluationValue record);
+        Task<bool> ExistsForApplicantAsync(int applicantId, int evaluationCriteriaId, int? excludeId = null);
         Task<PagedResponse<ApplicantEvaluationValueDto>> GetAllByApplicantPagedAsync(
             int applicantId, int page, int pageSize,
             string? sortField = null, string? sortOrder = null,

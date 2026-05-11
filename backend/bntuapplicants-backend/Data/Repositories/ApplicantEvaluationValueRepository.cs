@@ -176,6 +176,25 @@ namespace bntuapplicants_backend.Data.Repositories
             if (!string.IsNullOrWhiteSpace(value) && int.TryParse(value, out int valueFilter)) cmd.Parameters.AddWithValue("@ValueFilter", valueFilter);
         }
 
+        public async Task<bool> ExistsForApplicantAsync(int applicantId, int evaluationCriteriaId, int? excludeId = null)
+        {
+            using var connection = new NpgsqlConnection(_connectionString);
+            await connection.OpenAsync();
+
+            string query = excludeId.HasValue
+                ? "SELECT 1 FROM applicantevaluationvalues WHERE applicantid = @ApplicantId AND evaluationcriteriaid = @EvaluationCriteriaId AND id <> @ExcludeId LIMIT 1"
+                : "SELECT 1 FROM applicantevaluationvalues WHERE applicantid = @ApplicantId AND evaluationcriteriaid = @EvaluationCriteriaId LIMIT 1";
+
+            using var command = new NpgsqlCommand(query, connection);
+            command.Parameters.AddWithValue("@ApplicantId", applicantId);
+            command.Parameters.AddWithValue("@EvaluationCriteriaId", evaluationCriteriaId);
+            if (excludeId.HasValue)
+                command.Parameters.AddWithValue("@ExcludeId", excludeId.Value);
+
+            var result = await command.ExecuteScalarAsync();
+            return result != null;
+        }
+
         public async Task<ApplicantEvaluationValue?> GetByIdAsync(int id)
         {
             ApplicantEvaluationValue? record = null;
