@@ -11,6 +11,7 @@ namespace bntuapplicants_backend.Services
         Task LogInvalidateAsync(int applicantId, bool automatic, string? comment = null, NpgsqlTransaction? tx = null);
         Task LogDeleteConfirmedAsync(int applicantId, NpgsqlTransaction? tx = null);
         Task LogDeleteRejectedAsync(int applicantId, NpgsqlTransaction? tx = null);
+        Task LogRecalculationAsync(int selectedCount, NpgsqlTransaction tx);
         Task ResetValidationIfNeededAsync(int applicantId, NpgsqlTransaction tx);
     }
 }

@@ -59,6 +59,12 @@ namespace bntuapplicants_backend.Services
             return WriteAsync("delete_rejected", "applicant", applicantId.ToString(), null, tx);
         }
 
+        public Task LogRecalculationAsync(int selectedCount, NpgsqlTransaction tx)
+        {
+            var changes = new { selectedCount };
+            return WriteAsync("recalculate_all", "selection", "all", changes, tx);
+        }
+
         public async Task ResetValidationIfNeededAsync(int applicantId, NpgsqlTransaction tx)
         {
             var conn = tx.Connection!;

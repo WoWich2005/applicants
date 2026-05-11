@@ -1,4 +1,5 @@
 using bntuapplicants_backend.Data.Interfaces;
+using bntuapplicants_backend.Data.Sql;
 using bntuapplicants_backend.Dtos.Responses;
 using bntuapplicants_backend.Models;
 using bntuapplicants_backend.Services;
@@ -136,9 +137,7 @@ namespace bntuapplicants_backend.Data.Repositories
             return $"ORDER BY {col} {dir}";
         }
 
-        private const string NotSoftDeleted = @"NOT EXISTS (
-                SELECT 1 FROM applicant_deletion_requests dr
-                WHERE dr.applicant_id = Applicants.id AND dr.status IN ('pending','confirmed'))";
+        private const string NotSoftDeleted = SoftDelete.NotSoftDeleted;
 
         public async Task<PagedResponse<Applicant>> GetPagedAsync(int page, int pageSize, string? search, string? externalIdSearch = null, string? idSearch = null, string? sortField = null, string? sortOrder = null)
         {
