@@ -1,47 +1,45 @@
 using bntuapplicants_backend.Dtos.Responses;
-using OfficeOpenXml;
-using OfficeOpenXml.Style;
+using ClosedXML.Excel;
 
 namespace bntuapplicants_backend.Services
 {
     public class ExcelExportService
     {
-        public async Task<byte[]> GenerateCompetitionListReportAsync(CompetitionListResultDto cl)
+        public Task<byte[]> GenerateCompetitionListReportAsync(CompetitionListResultDto cl)
         {
-            ExcelPackage.License.SetNonCommercialPersonal("My Name");
-            using var package = new ExcelPackage();
+            using var workbook = new XLWorkbook();
 
             if (cl.Categories.Count == 0)
             {
-                package.Workbook.Worksheets.Add("Пусто");
-                return await package.GetAsByteArrayAsync();
+                workbook.Worksheets.Add("Пусто");
+                return Task.FromResult(ToByteArray(workbook));
             }
 
             foreach (var cat in cl.Categories)
             {
-                string sheetName = cat.Name.Length > 31 ? cat.Name[..31] : cat.Name;
-                var ws = package.Workbook.Worksheets.Add(sheetName);
+                string sheetName = SanitizeSheetName(cat.Name);
+                var ws = workbook.Worksheets.Add(sheetName);
 
-                // Build column headers: id | externalid | ФИО | criteria... | Зачислен в
-                ws.Cells[1, 1].Value = "ID";
-                ws.Cells[1, 2].Value = "Идентификатор";
-                ws.Cells[1, 3].Value = "ФИО";
+                ws.Cell(1, 1).Value = "ID";
+                ws.Cell(1, 2).Value = "Идентификатор";
+                ws.Cell(1, 3).Value = "ФИО";
                 for (int i = 0; i < cat.Criteria.Count; i++)
-                    ws.Cells[1, 4 + i].Value = cat.Criteria[i].Name;
+                    ws.Cell(1, 4 + i).Value = cat.Criteria[i].Name;
                 int admittedToCol = 4 + cat.Criteria.Count;
-                ws.Cells[1, admittedToCol].Value = "Зачислен в";
+                ws.Cell(1, admittedToCol).Value = "Зачислен в";
 
                 int totalCols = admittedToCol;
-                ws.Cells[1, 1, 1, totalCols].Style.Font.Bold = true;
+                ws.Range(1, 1, 1, totalCols).Style.Font.Bold = true;
 
                 int row = 2;
 
                 // Section: admitted
-                ws.Cells[row, 1].Value = "Зачислены";
-                ws.Cells[row, 1, row, totalCols].Merge = true;
-                ws.Cells[row, 1].Style.Font.Bold = true;
-                ws.Cells[row, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                ws.Cells[row, 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(198, 224, 180));
+                var admittedHeader = ws.Range(row, 1, row, totalCols);
+                admittedHeader.Merge();
+                admittedHeader.FirstCell().Value = "Зачислены";
+                admittedHeader.Style.Font.Bold = true;
+                admittedHeader.Style.Fill.PatternType = XLFillPatternValues.Solid;
+                admittedHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#C6E0B4");
                 row++;
 
                 foreach (var a in cat.Admitted)
@@ -50,31 +48,46 @@ namespace bntuapplicants_backend.Services
                 row++; // empty row
 
                 // Section: not admitted
-                ws.Cells[row, 1].Value = "Подавали заявку, но не прошли";
-                ws.Cells[row, 1, row, totalCols].Merge = true;
-                ws.Cells[row, 1].Style.Font.Bold = true;
-                ws.Cells[row, 1].Style.Fill.PatternType = ExcelFillStyle.Solid;
-                ws.Cells[row, 1].Style.Fill.BackgroundColor.SetColor(System.Drawing.Color.FromArgb(255, 199, 206));
+                var notAdmittedHeader = ws.Range(row, 1, row, totalCols);
+                notAdmittedHeader.Merge();
+                notAdmittedHeader.FirstCell().Value = "Подавали заявку, но не прошли";
+                notAdmittedHeader.Style.Font.Bold = true;
+                notAdmittedHeader.Style.Fill.PatternType = XLFillPatternValues.Solid;
+                notAdmittedHeader.Style.Fill.BackgroundColor = XLColor.FromHtml("#FFC7CE");
                 row++;
 
                 foreach (var a in cat.NotAdmitted)
                     row = WriteApplicantRow(ws, row, a, cat.Criteria, admittedToCol, a.AdmittedTo ?? "Никуда");
 
-                ws.Cells[ws.Dimension.Address].AutoFitColumns();
+                ws.Columns().AdjustToContents();
             }
 
-            return await package.GetAsByteArrayAsync();
+            return Task.FromResult(ToByteArray(workbook));
         }
 
-        private static int WriteApplicantRow(ExcelWorksheet ws, int row, ApplicantResultDto a, List<CriterionInfoDto> criteria, int admittedToCol, string? admittedTo = null)
+        // Excel sheet names may not contain: \ / * ? [ ] :
+        private static string SanitizeSheetName(string name)
         {
-            ws.Cells[row, 1].Value = a.Id;
-            ws.Cells[row, 2].Value = a.ExternalId;
-            ws.Cells[row, 3].Value = a.Name;
+            var sanitized = string.Concat(name.Select(c => @"\/*?[]:".Contains(c) ? '_' : c));
+            return sanitized.Length > 31 ? sanitized[..31] : sanitized;
+        }
+
+        private static byte[] ToByteArray(XLWorkbook workbook)
+        {
+            using var ms = new MemoryStream();
+            workbook.SaveAs(ms);
+            return ms.ToArray();
+        }
+
+        private static int WriteApplicantRow(IXLWorksheet ws, int row, ApplicantResultDto a, List<CriterionInfoDto> criteria, int admittedToCol, string? admittedTo = null)
+        {
+            ws.Cell(row, 1).Value = a.Id;
+            ws.Cell(row, 2).Value = a.ExternalId;
+            ws.Cell(row, 3).Value = a.Name;
             for (int i = 0; i < criteria.Count; i++)
-                ws.Cells[row, 4 + i].Value = a.Scores.TryGetValue(criteria[i].Id, out int v) ? v : 0;
+                ws.Cell(row, 4 + i).Value = a.Scores.TryGetValue(criteria[i].Id, out int v) ? v : 0;
             if (admittedTo != null)
-                ws.Cells[row, admittedToCol].Value = admittedTo;
+                ws.Cell(row, admittedToCol).Value = admittedTo;
             return row + 1;
         }
     }
