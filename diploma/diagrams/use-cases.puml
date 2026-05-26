@@ -1,0 +1,67 @@
+@startuml use-cases
+' Диаграмма вариантов использования системы автоматизации
+' приёмной комиссии БНТУ. Чёрно-белое оформление по конвенции БНТУ.
+
+skinparam DefaultFontName "Times New Roman"
+skinparam DefaultFontSize 14
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam BackgroundColor #FFFFFF
+skinparam ActorBackgroundColor #FFFFFF
+skinparam UsecaseBackgroundColor #FFFFFF
+skinparam ArrowColor #000000
+left to right direction
+
+actor "Просматривающий" as DataViewer
+actor "Оператор\nприёмной комиссии" as AdmissionsOperator
+actor "Аудитор" as Auditor
+actor "Администратор\nданных" as DataAdministrator
+actor "Суперадминистратор" as SuperAdmin
+
+' Иерархия наследования ролей: расширенные роли наследуют права базовых
+DataViewer <|-- AdmissionsOperator
+DataViewer <|-- Auditor
+AdmissionsOperator <|-- DataAdministrator
+Auditor <|-- DataAdministrator
+DataAdministrator <|-- SuperAdmin
+
+rectangle "Система автоматизации приёмной комиссии" {
+
+  usecase "Войти в систему" as UC_Login
+  usecase "Сменить пароль" as UC_ChangePassword
+  usecase "Просмотреть\nрезультаты отбора" as UC_ViewResults
+  usecase "Выгрузить\nрезультаты в Excel" as UC_ExportExcel
+  usecase "Просмотреть\nжурналы аудита" as UC_ViewLogs
+
+  usecase "Зарегистрировать\nабитуриента" as UC_CreateApplicant
+  usecase "Ввести оценки\nи заявки" as UC_EnterScores
+  usecase "Запросить удаление\nабитуриента" as UC_RequestDeletion
+
+  usecase "Подтвердить\nвалидацию данных" as UC_Validate
+  usecase "Подтвердить или\nотклонить удаление" as UC_ResolveDeletion
+
+  usecase "Настроить\nправила приёма" as UC_ConfigRules
+  usecase "Запустить пересчёт\nрезультатов" as UC_TriggerRecalculation
+
+  usecase "Управлять\nучётными записями" as UC_ManageUsers
+}
+
+DataViewer --> UC_Login
+DataViewer --> UC_ChangePassword
+DataViewer --> UC_ViewResults
+DataViewer --> UC_ExportExcel
+DataViewer --> UC_ViewLogs
+
+AdmissionsOperator --> UC_CreateApplicant
+AdmissionsOperator --> UC_EnterScores
+AdmissionsOperator --> UC_RequestDeletion
+
+Auditor --> UC_Validate
+Auditor --> UC_ResolveDeletion
+
+DataAdministrator --> UC_ConfigRules
+DataAdministrator --> UC_TriggerRecalculation
+
+SuperAdmin --> UC_ManageUsers
+
+@enduml

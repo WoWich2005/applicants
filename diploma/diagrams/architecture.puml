@@ -1,0 +1,30 @@
+@startuml architecture
+' Архитектура компонентов системы автоматизации приёмной комиссии.
+' Трёхзвенная клиент-серверная архитектура: SPA + REST API + СУБД.
+' Чёрно-белое оформление по конвенции БНТУ.
+
+skinparam DefaultFontName "Times New Roman"
+skinparam DefaultFontSize 14
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam BackgroundColor #FFFFFF
+skinparam ComponentBackgroundColor #FFFFFF
+skinparam DatabaseBackgroundColor #FFFFFF
+skinparam ActorBackgroundColor #FFFFFF
+skinparam ArrowColor #000000
+skinparam ArrowFontSize 12
+left to right direction
+
+actor "Пользователь" as user
+
+component "Клиентское приложение\n(одностраничное\nвеб-приложение)" as spa
+component "Серверная часть\n(REST API)" as api
+database "База данных" as db
+component "Управление\nмиграциями" as migrations
+
+user -down-> spa : HTTPS
+spa -right-> api : REST/JSON\nHTTPS
+api -down-> db : SQL
+migrations -down-> db : SQL
+
+@enduml
