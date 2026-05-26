@@ -1,0 +1,8 @@
+# LaTeX build artifacts
+build/
+
+# Reference materials
+reference/
+
+# macOS
+.DS_Store
