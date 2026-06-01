@@ -1,0 +1,75 @@
+@startuml activity-validation
+' Диаграмма деятельности процесса двойного контроля данных абитуриента.
+' Swim-lanes разделяют действия Оператора приёмной комиссии, Аудитора
+' и автоматические действия Системы. Показывает цикл: первичный ввод
+' данных оператором, проверка аудитором, автоматический сброс
+' валидации при последующих изменениях.
+
+skinparam DefaultFontName "Times New Roman"
+skinparam DefaultFontSize 14
+skinparam Monochrome true
+skinparam Shadowing false
+skinparam BackgroundColor #FFFFFF
+skinparam ActivityBackgroundColor #FFFFFF
+skinparam ActivityBorderColor #000000
+skinparam ActivityDiamondBackgroundColor #FFFFFF
+skinparam ActivityDiamondBorderColor #000000
+skinparam ArrowColor #000000
+skinparam ArrowFontSize 12
+skinparam PartitionBackgroundColor #FFFFFF
+skinparam PartitionBorderColor #000000
+
+|Оператор приёмной комиссии|
+start
+:Создать запись абитуриента
+(имя, externalid);
+:Внести оценки по критериям;
+:Добавить заявки в категории
+с указанием приоритета;
+|Система|
+:Сохранить изменения,
+validated = false;
+:Запустить пересчёт
+результатов отбора;
+:Запись в audit_log;
+|Аудитор|
+:Открыть вкладку
+<<Невалидированные абитуриенты>>;
+:Открыть страницу абитуриента;
+:Сверить данные с документами;
+if (Данные корректны?) then (да)
+  :Нажать <<Подтвердить валидацию>>;
+  |Система|
+  :validated = true;
+  :Запись validate в audit_log;
+else (нет)
+  |Аудитор|
+  :Уведомить оператора
+  о необходимости исправления;
+  |Оператор приёмной комиссии|
+  :Исправить данные;
+  |Система|
+  :validated = false (без изменения,
+  уже false);
+  :Запись update в audit_log;
+  -> повторная проверка;
+  stop
+endif
+|Оператор приёмной комиссии|
+if (Требуется изменение
+данных позже?) then (да)
+  :Изменить поле записи;
+  |Система|
+  :validated = false
+  (автоматический сброс);
+  :Запись invalidate
+  с пометкой automatic;
+  :Запустить повторный
+  пересчёт;
+  -> повторная валидация
+  аудитором;
+else (нет)
+endif
+stop
+
+@enduml

@@ -1,0 +1,113 @@
+\documentclass[border=4pt]{standalone}
+% Диаграмма вариантов использования системы автоматизации
+% приёмной комиссии БНТУ. Чёрно-белое оформление по конвенции БНТУ.
+%
+% Компоновка:
+%   * Акторы в одной вертикальной колонке (x=0). Каждый актор - узел только
+%     для фигуры (без подписи в bbox), подпись отдельным узлом ниже.
+%     Это позволяет стрелкам наследования упираться в фигуру, а не в текст.
+%   * Каждый use case стоит на одной y-координате со своим основным актором
+%     => стрелка ассоциации строго горизонтальная.
+%   * Иерархия наследования с ромбовидным двойным родителем (Админ данных)
+%     рисуется тонкими ортогональными огибалками слева от колонки акторов.
+%
+% Сборка: xelatex use-cases.tex (см. build-diagrams.sh).
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,arrows.meta,fit,shapes.geometric}
+
+% Размещение актора. Использование: \placeactor{name}{x}{y}{label}.
+% Создаёт два узла: `name-fig` (только фигура) и `name-lbl` (подпись под
+% фигурой). Стрелки наследования крепятся к name-lbl.south (старт ниже
+% текста, чтобы линия не проходила через подпись) и name-fig.north.
+% Стрелки ассоциаций - к name-fig.east.
+% outer sep=5pt у обоих узлов: при использовании их анкоров (.south, .north,
+% .east) TikZ возвращает точку на 5pt снаружи фактического содержимого,
+% что автоматически даёт зазор между концами стрелок и текстом/фигурой.
+\newcommand{\placeactor}[4]{%
+  \begin{scope}[shift={(#2,#3)}]
+    \node[minimum width=0.5cm, minimum height=1.0cm,
+          inner sep=0pt, outer sep=5pt] (#1-fig) at (0,0) {};
+    \draw[line width=0.5pt]
+      (0, 0.40) circle (0.13)
+      (0, 0.27) -- (0,-0.10)
+      (-0.22, 0.15) -- (0.22, 0.15)
+      (0,-0.10) -- (-0.18,-0.40)
+      (0,-0.10) -- ( 0.18,-0.40);
+    \node[anchor=north, font=\small, align=center,
+          text width=3.2cm, inner sep=1pt, outer sep=5pt] (#1-lbl) at (0,-0.55) {#4};
+  \end{scope}
+}
+
+\tikzset{
+  usecase/.style={
+    ellipse, draw, align=center, font=\small,
+    minimum width=4.2cm, minimum height=1.3cm,
+    inner sep=1pt, line width=0.4pt
+  },
+  inherit/.style={
+    draw, -{Triangle[open, length=3mm, width=3mm]},
+    line width=0.5pt
+  },
+  link/.style={
+    draw, -{Latex[length=2mm]}, line width=0.4pt
+  }
+}
+
+\begin{document}
+\begin{tikzpicture}
+
+% ============ Use cases (правая колонка, x=10) ============
+% Порядок сверху вниз соответствует порядку акторов слева.
+% Шаг 2 см, чтобы 3-строчные подписи акторов не накладывались на соседей.
+\node[usecase] (uc1) at (10,12.0) {Управление\\учётными записями\\пользователей};
+\node[usecase] (uc2) at (10, 9.0) {Настройка правил\\приёма и запуск\\пересчёта};
+\node[usecase] (uc3) at (10, 6.0) {Валидация данных\\и разрешение\\удалений};
+\node[usecase] (uc4) at (10, 3.0) {Ведение данных\\абитуриентов и заявок};
+\node[usecase] (uc5) at (10, 1.2) {Аутентификация};
+\node[usecase] (uc8) at (10,-0.6) {Просмотр данных\\всех сущностей};
+\node[usecase] (uc6) at (10,-2.4) {Просмотр\\результатов отбора\\и выгрузка в Excel};
+\node[usecase] (uc7) at (10,-4.2) {Просмотр журналов\\действий и входов};
+
+% Граница системы. Title под верхней границей с fill=white, чтобы линия
+% границы не пересекала текст подписи.
+\node[draw, fit=(uc1)(uc2)(uc3)(uc4)(uc5)(uc8)(uc6)(uc7),
+      inner xsep=12mm, inner ysep=12mm, line width=0.5pt] (system) {};
+\node[anchor=north, font=\small\bfseries, fill=white, inner sep=2pt]
+  at ($(system.north)+(0,-1mm)$) {Система автоматизации приёмной комиссии};
+
+% ============ Акторы (левая колонка, x=0) ============
+\placeactor{sa}{0}{12.0}{Суперадминистратор}
+\placeactor{da}{0}{ 9.0}{Администратор данных}
+\placeactor{au}{0}{ 6.0}{Аудитор}
+\placeactor{op}{0}{ 3.0}{Оператор приёмной комиссии}
+\placeactor{dv}{0}{-0.6}{Просматривающий}
+
+% ============ Иерархия наследования (открытый треугольник к РОДИТЕЛЮ) ============
+% Линейная цепочка: права каждой следующей роли - строгое надмножество прав
+% предыдущей. SA = DA + управление пользователями, DA = AU + структура,
+% AU = OP + аудит, OP = DV + ведение абитуриентов.
+% Стрелки идут СВЕРХУ ВНИЗ от подписи верхнего актора (-lbl.south,
+% чтобы линия не проходила через текст подписи) к фигуре нижнего
+% актора (-fig.north). Треугольник у роли-родителя.
+\draw[inherit] (sa-lbl.south) -- (da-fig.north);   % SuperAdmin         -> DataAdministrator
+\draw[inherit] (da-lbl.south) -- (au-fig.north);   % DataAdministrator  -> Auditor
+\draw[inherit] (au-lbl.south) -- (op-fig.north);   % Auditor            -> AdmissionsOperator
+\draw[inherit] (op-lbl.south) -- (dv-fig.north);   % AdmissionsOperator -> DataViewer
+
+% ============ Ассоциации актор --> вариант использования ============
+% Все горизонтальные, без пересечений.
+\draw[link] (sa-fig.east) -- (uc1.west);   % Суперадм -> Управление пользователями
+\draw[link] (da-fig.east) -- (uc2.west);   % Админ    -> Настройка правил
+\draw[link] (au-fig.east) -- (uc3.west);   % Аудитор  -> Валидация
+\draw[link] (op-fig.east) -- (uc4.west);   % Оператор -> Ведение данных
+\draw[link] (dv-fig.east) -- (uc5.west);   % Просматр -> Аутентификация
+\draw[link] (dv-fig.east) -- (uc8.west);   % Просматр -> Просмотр всех данных
+\draw[link] (dv-fig.east) -- (uc6.west);   % Просматр -> Просмотр результатов
+\draw[link] (dv-fig.east) -- (uc7.west);   % Просматр -> Просмотр журналов
+
+\end{tikzpicture}
+\end{document}

@@ -1,0 +1,125 @@
+% Блок-схема алгоритма пересчёта результатов отбора.
+% Оформление по ГОСТ 19.701-90:
+%   прямоугольник — операция/процесс;
+%   ромб — условие;
+%   овал-«пилюля» — начало/конец;
+%   параллелограмм — ввод/вывод данных.
+%
+% Документ компилируется самостоятельно через XeLaTeX:
+%   xelatex selection-algorithm.tex
+% Результат — selection-algorithm.pdf одностраничный, размер кадрируется по содержимому.
+
+\documentclass[border=4mm]{standalone}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc}
+
+\begin{document}
+
+\begin{tikzpicture}[
+  font=\fontsize{10pt}{12pt}\selectfont,
+  node distance=6mm and 12mm,
+  every node/.style={align=center},
+  % Стили блоков ГОСТ 19.701-90
+  startstop/.style={
+    rectangle, rounded corners=4mm,
+    minimum width=46mm, minimum height=9mm,
+    draw=black, thick, fill=white,
+  },
+  process/.style={
+    rectangle,
+    minimum width=70mm, minimum height=10mm,
+    draw=black, thick, fill=white,
+    text width=66mm,
+  },
+  io/.style={
+    trapezium, trapezium left angle=70, trapezium right angle=110,
+    minimum width=70mm, minimum height=9mm,
+    draw=black, thick, fill=white,
+    text width=64mm,
+  },
+  decision/.style={
+    diamond, aspect=2.8,
+    minimum width=74mm, minimum height=15mm,
+    draw=black, thick, fill=white,
+    inner sep=1pt,
+    text width=60mm,
+  },
+  arrow/.style={-{Latex[length=2.5mm, width=2mm]}, thick},
+  label/.style={font=\fontsize{9pt}{11pt}\selectfont, inner sep=3pt, outer sep=3pt, fill=white},
+]
+
+% ===== Основной поток =====
+\node[startstop]                       (start)    {Начало};
+\node[io,       below=of start]        (loaddata) {Загрузить снимок данных из БД};
+\node[process,  below=of loaddata]     (filter)   {Исключить заявки с незаполненными\\ критериями группы категории};
+\node[process,  below=of filter]       (init)     {Поместить всех абитуриентов\\ с непустыми списками заявок в очередь};
+
+\node[decision, below=of init]         (qempty)   {Очередь пуста?};
+
+\node[process,  below=of qempty]       (take)     {Извлечь абитуриента из очереди};
+\node[decision, below=of take]         (haspref)  {Есть категория\\ в списке предпочтений?};
+\node[process,  below=of haspref]      (addpool)  {Добавить в пул кандидатов\\ следующей категории};
+
+\node[decision, below=of addpool]      (overquota) {Размер пула\\ больше квоты?};
+\node[process,  below=of overquota]    (evict1)   {Извлечь самого слабого\\ кандидата и вернуть в очередь};
+
+\node[decision, below=of evict1]       (overplan)  {Сумма зачисленных\\ больше плана?};
+\node[process,  below=of overplan]     (evict2)   {Извлечь самого слабого из категории с наименьшим приоритетом};
+
+% Финальные блоки — со сдвигом вниз, чтобы освободить место под loopback
+\node[process,  below=of evict2, yshift=-10mm]   (clear)   {Очистить таблицу результатов};
+\node[process,  below=of clear]                  (insert)  {Массово вставить содержимое пулов};
+\node[startstop, below=of insert]                (stop)    {Конец};
+
+% Блок отказа — справа от ромба «есть предпочтения»
+\node[process, right=30mm of haspref] (reject) {Абитуриент не принят ни по одной из категорий};
+
+% ===== Связи =====
+\draw[arrow] (start) -- (loaddata);
+\draw[arrow] (loaddata) -- (filter);
+\draw[arrow] (filter) -- (init);
+\draw[arrow] (init) -- (qempty);
+
+% Основной нисходящий поток с подписями условий
+\draw[arrow] (qempty) -- node[label, right] {Нет} (take);
+\draw[arrow] (take) -- (haspref);
+\draw[arrow] (haspref) -- node[label, right] {Да} (addpool);
+\draw[arrow] (addpool) -- (overquota);
+
+\draw[arrow] (overquota) -- node[label, right] {Да} (evict1);
+\draw[arrow] (evict1) -- (overplan);
+\draw[arrow] (overplan) -- node[label, right] {Да} (evict2);
+
+% Ветка «Нет» от overquota — обход справа, минуя evict1, сразу к проверке плана
+\draw[arrow] (overquota.east) -- node[label, pos=0, anchor=west, above, xshift=1pt] {Нет} ++(15mm,0) |- (overplan.east);
+
+% Ветка «Нет» от haspref — в блок отказа
+\draw[arrow] (haspref.east) -- node[label, pos=0, anchor=west, above, xshift=1pt] {Нет} (reject.west);
+
+% Возврат в очередь: evict2, overplan-Нет и reject сходятся к левому спайну,
+% который поднимается до qempty.west
+\coordinate (loopback-start)   at ($(evict2.south)+(0,-4mm)$);
+\coordinate (loopback-corner1) at ($(evict2.south west)+(-25mm,-4mm)$);
+\coordinate (loopback-corner2) at ($(qempty.west)+(-25mm,0)$);
+% Точка на левом спайне, на уровне overplan — для ветки «Нет» от overplan
+\coordinate (loopback-overplan) at (loopback-corner1 |- overplan.west);
+
+\draw[arrow] (evict2.south) -- (loopback-start) -- (loopback-corner1) -- (loopback-corner2) -- (qempty.west);
+\draw      (reject.south) |- (loopback-start);
+% «Нет» от overplan: план не превышен, вытеснение не нужно — возврат в очередь
+\draw      (overplan.west) -- node[label, midway, above] {Нет} (loopback-overplan);
+
+% Ветка «Да» от qempty — выход из цикла к блоку очистки.
+% Идёт справа, чтобы не пересекаться с loopback слева.
+\draw[arrow] (qempty.east) -- node[label, pos=0, anchor=west, above, xshift=1pt] {Да} ++(20mm,0) |- (clear.east);
+
+\draw[arrow] (clear) -- (insert);
+\draw[arrow] (insert) -- (stop);
+
+\end{tikzpicture}
+
+\end{document}

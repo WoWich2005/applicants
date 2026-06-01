@@ -13,18 +13,20 @@ skinparam DatabaseBackgroundColor #FFFFFF
 skinparam ActorBackgroundColor #FFFFFF
 skinparam ArrowColor #000000
 skinparam ArrowFontSize 12
+skinparam RectangleBackgroundColor #FFFFFF
 left to right direction
 
 actor "Пользователь" as user
 
-component "Клиентское приложение\n(одностраничное\nвеб-приложение)" as spa
-component "Серверная часть\n(REST API)" as api
+rectangle "Клиентское приложение\n(одностраничное\nвеб-приложение)" as spa
+rectangle "Серверная часть\n(REST API)" as api
 database "База данных" as db
-component "Управление\nмиграциями" as migrations
+rectangle "Управление\nмиграциями" as migrations
 
 user -down-> spa : HTTPS
-spa -right-> api : REST/JSON\nHTTPS
+spa -right-> api
 api -down-> db : SQL
 migrations -down-> db : SQL
+hide empty description
 
 @enduml

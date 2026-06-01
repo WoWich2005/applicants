@@ -1,0 +1,138 @@
+% Диаграмма развёртывания системы автоматизации приёмной комиссии.
+% Чёрно-белое оформление по конвенции БНТУ.
+% Сборка: xelatex deployment.tex (см. build-diagrams.sh).
+
+\documentclass[border=4mm]{standalone}
+
+\usepackage{fontspec}
+\setmainfont{Times New Roman}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning,calc,arrows.meta,fit,shapes.geometric}
+
+\begin{document}
+\begin{tikzpicture}[
+  font=\fontsize{11pt}{13pt}\selectfont,
+  every node/.style={align=center},
+  container/.style={
+    draw=black, thick, rectangle,
+  },
+  containerlabel/.style={
+    anchor=north west,
+    font=\fontsize{11pt}{13pt}\selectfont\bfseries,
+    inner sep=1pt, fill=white,
+  },
+  comp/.style={
+    draw=black, thick, fill=white, rectangle,
+    minimum height=14mm, minimum width=42mm, inner sep=2mm,
+  },
+  art/.style={
+    draw=black, thick, fill=white, rectangle,
+    minimum height=11mm, minimum width=42mm, inner sep=2mm,
+  },
+  cyl/.style={
+    draw=black, thick, fill=white,
+    cylinder, shape border rotate=90, aspect=0.25,
+    minimum width=44mm, minimum height=17mm,
+    inner sep=2mm,
+  },
+  arrow/.style={-{Stealth[length=2.5mm]}, thick},
+  dotlink/.style={dashed, thin},
+  edgelbl/.style={
+    font=\fontsize{9.5pt}{11pt}\selectfont,
+    align=center, fill=white, inner sep=2pt,
+  },
+]
+
+% ============================================================
+% РАБОЧАЯ СТАНЦИЯ (слева)
+% ============================================================
+\node[comp] (browser) {Веб-браузер\\(Chrome, Firefox, Safari)};
+\node[art, below=18mm of browser] (token) {JWT-токен\\в localStorage};
+\draw[dotlink] (browser) -- (token);
+
+\node[container, fit=(browser)(token), inner xsep=10mm, inner ysep=10mm] (ws) {};
+\node[containerlabel] at ([xshift=2mm, yshift=-1mm]ws.north west)
+  {Рабочая станция пользователя};
+
+% ============================================================
+% СЕРВЕР ПРИЛОЖЕНИЙ (справа) — сначала строим внутренности
+% ============================================================
+% Верхний ряд: nginx и backend.
+\node[comp, right=72mm of browser] (nginx)
+  {Веб-сервер\\статических файлов\\(nginx)};
+\node[comp, right=22mm of nginx] (backend)
+  {Серверная часть\\(ASP.NET Core 8,\\Kestrel)};
+
+% Артефакт SPA — под nginx.
+\node[art, below=12mm of nginx] (spa) {Сборка SPA\\(HTML, JS, CSS)};
+\draw[dotlink] (nginx) -- (spa);
+
+% Контейнер liquibase — ниже, слева внутри docker.
+\node[comp, below=32mm of spa] (liquibase)
+  {Liquibase 5.0\\(миграции схемы)};
+\node[container, fit=(liquibase), inner xsep=5mm, inner ysep=14mm] (liqbox) {};
+\node[containerlabel, align=left] at ([xshift=2mm, yshift=-1mm]liqbox.north west)
+  {Контейнер\\liquibase};
+
+% Контейнер с postgres и томом — справа внутри docker.
+\node[cyl, right=28mm of liquibase] (postgres) {PostgreSQL 18\\alpine};
+\node[art, below=12mm of postgres] (volume) {Том\\postgres\_data};
+\draw[dotlink] (postgres) -- (volume);
+\node[container, fit=(postgres)(volume), inner xsep=5mm, inner ysep=14mm] (pgbox) {};
+\node[containerlabel, align=left] at ([xshift=2mm, yshift=-1mm]pgbox.north west)
+  {Контейнер\\bntuapplicants-postgres};
+
+% Обёртка Docker Engine.
+\node[container, fit=(liqbox)(pgbox), inner xsep=7mm, inner ysep=10mm] (docker) {};
+\node[containerlabel] at ([xshift=2mm, yshift=-1mm]docker.north west)
+  {Docker Engine};
+
+% Обёртка всего сервера.
+\node[container, fit=(nginx)(backend)(spa)(docker),
+      inner xsep=8mm, inner ysep=11mm] (server) {};
+\node[containerlabel] at ([xshift=2mm, yshift=-1mm]server.north west)
+  {Сервер приложений};
+
+% ============================================================
+% СТРЕЛКИ
+% ============================================================
+% Обе стрелки из browser выходят справа симметрично относительно центра
+% блока: REST/JSON — выше центра на 4mm (уходит вверх), статика — ниже
+% центра на 4mm (идёт прямо к nginx).
+
+% browser -> nginx (статика). Прямая горизонтальная, ниже центра.
+\coordinate (br_nginx_a) at ([yshift=-4mm]browser.east);
+\coordinate (br_nginx_b) at ([yshift=-4mm]nginx.west);
+\draw[arrow] (br_nginx_a) -- (br_nginx_b);
+\node[edgelbl] at ($(br_nginx_a)!0.5!(br_nginx_b)$)
+  {HTTPS\\(статика)};
+
+% browser -> backend (REST/JSON). Маршрут «вправо -> вверх -> вправо -> вниз»:
+% выходим горизонтально из browser выше центра, пересекая правую границу ws,
+% затем поднимаемся выше уровня сервера, идём вправо до точки над backend
+% и спускаемся в backend.north. Метку размещаем на верхнем горизонтальном
+% участке выше всех контейнеров.
+\coordinate (br_back_start) at ([yshift=4mm]browser.east);
+\coordinate (br_back_a) at ([xshift=4mm]ws.east |- br_back_start);
+\coordinate (br_back_b) at ([yshift=20mm]br_back_a);
+\coordinate (br_back_c) at (br_back_b -| backend.north);
+\draw[arrow] (br_back_start) -- (br_back_a) -- (br_back_b) -- (br_back_c) -- (backend.north);
+\node[edgelbl] at ($(br_back_b)!0.5!(br_back_c)$)
+  {HTTPS, REST/JSON\\(порт 5059)};
+
+% backend -> postgres (SQL). Маршрут: вправо от backend, вниз вдоль правой
+% стороны server, затем влево внутрь pgbox до postgres.east — обходит заголовок
+% контейнера bntuapplicants-postgres.
+\coordinate (bp_a) at ([xshift=12mm]backend.east);
+\coordinate (bp_b) at (bp_a |- postgres.east);
+\draw[arrow] (backend.east) -- (bp_a) -- (bp_b) -- (postgres.east);
+\node[edgelbl] at ([yshift=-20mm]bp_a) {SQL\\(порт 5432)};
+
+% liquibase -> postgres (SQL при обновлении). Горизонтальная стрелка.
+\draw[arrow] (liquibase.east) -- (postgres.west)
+  node[edgelbl, midway, above=2mm]
+  {SQL (порт 5432,\\при обновлении)};
+
+\end{tikzpicture}
+\end{document}

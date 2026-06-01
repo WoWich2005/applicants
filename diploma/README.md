@@ -66,7 +66,6 @@ make clean      # удалить промежуточные файлы
    (формулы трудоёмкости, себестоимость, отпускная цена, окупаемость).
 2. **Рисунки** — экспортировать из проекта/draw.io в `images/`:
    - `architecture.png`
-   - `er-diagram.png`
    - `selection-algorithm.png`
    - `login.png`, `applicants.png`, `results.png`
 3. **appendix.tex** — вставить листинги ключевых модулей.
