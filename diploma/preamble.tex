@@ -27,12 +27,13 @@
 \usepackage[a4paper,
             left=30mm, right=15mm,
             top=20mm, bottom=20mm,
-            headsep=8mm,
+            headsep=2mm,
             footskip=10mm]{geometry}
 
 % --- Шрифт Times New Roman 14pt (настоящий системный шрифт, не клон) ---
 \usepackage{fontspec}
 \setmainfont{Times New Roman}
+\setmonofont{Courier New}
 
 % Размер шрифта основного текста = 14pt; межстрочный интервал 18pt
 \renewcommand{\normalsize}{\fontsize{14pt}{18pt}\selectfont}
@@ -44,8 +45,32 @@
 \setlength{\parskip}{0pt}
 
 % --- Графика ---
-\usepackage[demo]{graphicx}  % demo: заглушки вместо картинок; убери [demo] когда добавишь реальные изображения
+% Расширения файлов перечислены в порядке предпочтения: при ссылке
+% \includegraphics{name} без расширения LaTeX возьмёт .pdf (вектор)
+% если он есть, иначе .png. Это позволяет хранить и PDF (для печати),
+% и PNG (для предпросмотра).
+\usepackage{graphicx}
+\usepackage{rotating}
+\usepackage{float}
 \graphicspath{{images/}}
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+
+% Условная вставка иллюстрации: если файл существует — вставляется,
+% иначе рисуется текстовая заглушка-прямоугольник. Это позволяет
+% собирать документ при отсутствии реальных скриншотов UI и т.п.
+% Использование:
+%   \figureorstub[0.7\textwidth]{login}{Скриншот страницы входа}
+\newcommand{\figureorstub}[3][\textwidth]{%
+  \IfFileExists{images/#2.pdf}{%
+    \includegraphics[width=#1]{#2}%
+  }{%
+    \IfFileExists{images/#2.png}{%
+      \includegraphics[width=#1]{#2}%
+    }{%
+      \fbox{\parbox[c][50mm][c]{\dimexpr#1-2\fboxsep-2\fboxrule\relax}{\centering\itshape [Заглушка: #3]}}%
+    }%
+  }%
+}
 
 % --- Таблицы ---
 \usepackage{array}
@@ -86,8 +111,10 @@
 \SetTblrStyle{caption}{halign=l}
 \SetTblrStyle{capcont}{halign=l}
 % В таблицах:
-%   - \code переопределяется локально на seqsplit-вариант, чтобы длинные URL
+%   - \codearg переопределяется на seqsplit-вариант, чтобы длинные URL
 %     и идентификаторы могли разрываться (вне таблиц \code не разбивается);
+%     сам \code как точка входа остаётся прежним — он по-прежнему отключает
+%     babel-shorthand для " и передаёт аргумент в \codearg;
 %   - \exhyphenpenalty=50 разрешает разрыв по уже существующим дефисам
 %     (например, «Бизнес-аналитик» → «Бизнес-» / «аналитик»), но не вводит
 %     новых переносов внутри слов;
@@ -96,7 +123,11 @@
 \usepackage{seqsplit}
 \AtBeginEnvironment{longtblr}{%
   \exhyphenpenalty=50\tolerance=9999\emergencystretch=3em%
-  \let\code\seqsplit%
+  % Заменяем растяжимый клей seqsplit между буквами на нерастяжимый
+  % discretionary — точка разрыва есть, но межбуквенный пробел не «расползается»
+  % при выключке по ширине в X-ячейках.
+  \def\seqinsert{\discretionary{}{}{}}%
+  \let\codearg\codeargtable%
 }
 \usepackage{multirow}
 \usepackage{makecell}
@@ -174,6 +205,18 @@
 \setlength{\textfloatsep}{18pt}   % float вверху/внизу страницы ↔ текст
 \setlength{\intextsep}{18pt}      % float [h] ↔ текст сверху и снизу
 \setlength{\floatsep}{18pt}       % между двумя подряд идущими float-ами
+% Параметры размещения плавающих объектов: разрешаем рисункам занимать
+% больше места на странице, чтобы они «всплывали» к ближайшему удобному
+% положению (top/bottom/here), а не уезжали на отдельную страницу,
+% оставляя пустоту в основном тексте.
+\renewcommand{\topfraction}{0.9}        % до 90% верха страницы — float
+\renewcommand{\bottomfraction}{0.7}     % до 70% низа — float
+\renewcommand{\textfraction}{0.1}       % минимум 10% страницы — текст
+\renewcommand{\floatpagefraction}{0.7}  % страница float'ов считается заполненной от 70%
+% placeins: \FloatBarrier гарантирует, что плавающие объекты не «уплывают»
+% за границу раздела. Опция [section] вставляет барьер автоматически
+% перед каждым \section, чего достаточно для нашей структуры (разделы — \section).
+\usepackage[section]{placeins}
 % Таблица: «Таблица 1.1 — Название», слева над таблицей
 \DeclareCaptionLabelFormat{tabledash}{Таблица #2}
 \captionsetup[table]{
@@ -271,6 +314,17 @@
 \renewcommand{\cftsecleader}{\cftdotfill{\cftdotsep}}
 \renewcommand{\cftsubsecleader}{\cftdotfill{\cftdotsep}}
 \renewcommand{\cftsubsubsecleader}{\cftdotfill{\cftdotsep}}
+% TOC-запись без точечного заполнителя и без номера страницы.
+% Используется для ведомости объёма, графической части и приложений —
+% по образцу оформления (методичка п. 3.8 / 4.3.2): эти элементы выводятся
+% одной строкой без указания страниц.
+\newcommand{\tocnopagenum}[1]{%
+  \addtocontents{toc}{%
+    \protect\par
+    \protect\noindent #1%
+    \protect\par
+  }%
+}
 % Продолжение многострочных заголовков — под цифрой номера (ГОСТ 2.105)
 % \numberline по умолчанию кладёт номер в box фиксированной ширины → hanging indent.
 % Заменяем на inline: номер + пробел, продолжение выравнивается по \cft*indent.
@@ -278,20 +332,42 @@
 \renewcommand{\numberline}[1]{#1\hspace{1em}}
 \makeatother
 
+% --- Вставка внешних PDF-страниц (для графической части) ---
+% pdfpages позволяет включать готовые PDF-файлы как страницы документа.
+% Используется в приложении для вставки графической части (слайдов
+% презентации, оформленных в Word и сохранённых как PDF).
+\usepackage{pdfpages}
+
 % --- Листинги программного кода ---
 \usepackage{listings}
 \usepackage{xcolor}
+% Локально внутри lstlisting понижаем глобальные penalties (см. начало преамбулы:
+% \hyphenpenalty=10000, \exhyphenpenalty=10000, \tolerance=9999). Без этого
+% listings не может разорвать длинные строки кода, потому что breaklines
+% использует штрафы переноса, которые мы запретили глобально для основного
+% текста на русском.
+\AtBeginEnvironment{lstlisting}{%
+  \hyphenpenalty=50\exhyphenpenalty=50\tolerance=200%
+}
 \lstset{
-  basicstyle=\small\rmfamily,
+  basicstyle=\fontsize{10pt}{12pt}\ttfamily,
+  keywordstyle=\ttfamily,
+  commentstyle=\ttfamily,
+  stringstyle=\ttfamily,
+  identifierstyle=\ttfamily,
   breaklines=true,
-  frame=single,
-  numbers=left,
-  numberstyle=\tiny,
-  keywordstyle=\bfseries,
-  commentstyle=\itshape,
+  breakatwhitespace=true,
+  breakindent=0pt,
+  columns=fixed,
+  keepspaces=true,
+  frame=none,
+  numbers=none,
   showstringspaces=false,
   tabsize=2,
-  captionpos=b
+  captionpos=b,
+  xleftmargin=0pt,
+  framexleftmargin=0pt,
+  upquote=true
 }
 
 % --- Умная запятая в формулах: «0,5» вместо «0, 5» ---
@@ -348,8 +424,13 @@
 
 % \src[key] — вместо \item в списке литературы; автоматически считает источники.
 % Необязательный аргумент key задаёт метку: \src[banner] → \label{src:banner}.
-% В тексте ссылаться как [\ref{src:banner}] — номер обновляется автоматически.
+% В тексте ссылаться как \citesrc{banner} — номер обновляется автоматически.
 \newcommand{\src}[1][]{\stepcounter{totreferences}\item\ifx\relax#1\relax\else\label{src:#1}\fi}
+
+% \citesrc{key} — ссылка на источник в тексте; не переносится на новую строку.
+% Поглощает пробел перед собой и заменяет его на неразрывный (\unskip~),
+% а сам номер с квадратными скобками заворачивает в \mbox.
+\newcommand{\citesrc}[1]{\unskip~\mbox{[\ref{src:#1}]}}
 
 % --- Перенос слов через дефис: аппаратно\hyphпрограммный ---
 \def\hyph{-\penalty0\hskip0pt\relax}
@@ -402,15 +483,24 @@
   language=[Sharp]C,
   morekeywords={yield,var,get,set,from,select,partial,where,async,await,
                 record,required,init,with,global,file,scoped,nint,nuint},
+  basicstyle=\fontsize{10pt}{12pt}\ttfamily,
+  keywordstyle=\ttfamily,
+  commentstyle=\ttfamily,
+  stringstyle=\ttfamily,
+  identifierstyle=\ttfamily,
   breaklines=true,
-  columns=fullflexible,
-  basicstyle=\small\rmfamily,
-  keywordstyle=\bfseries\color{clrKeyword},
-  commentstyle=\itshape\color{clrComment},
-  stringstyle=\color{clrString},
+  breakatwhitespace=true,
+  breakindent=0pt,
+  columns=fixed,
+  keepspaces=true,
   showstringspaces=false,
-  numbers=left, numberstyle=\tiny\color{gray},
-  frame=single, tabsize=2, captionpos=b
+  numbers=none,
+  frame=none,
+  tabsize=2,
+  captionpos=b,
+  xleftmargin=0pt,
+  framexleftmargin=0pt,
+  upquote=true
 }
 
 % Стиль для JavaScript / JSX
@@ -419,30 +509,89 @@
   morekeywords={const,let,async,await,export,default,import,from,of,
                 class,extends,return,function,=>,null,undefined,true,false,
                 useState,useEffect,useCallback,useMemo,useRef},
+  basicstyle=\fontsize{10pt}{12pt}\ttfamily,
+  keywordstyle=\ttfamily,
+  commentstyle=\ttfamily,
+  stringstyle=\ttfamily,
+  identifierstyle=\ttfamily,
   breaklines=true,
-  columns=fullflexible,
-  basicstyle=\small\rmfamily,
-  keywordstyle=\bfseries\color{clrKeyword},
-  commentstyle=\itshape\color{clrComment},
-  stringstyle=\color{clrString},
+  breakatwhitespace=true,
+  breakindent=0pt,
+  columns=fixed,
+  keepspaces=true,
   showstringspaces=false,
-  numbers=left, numberstyle=\tiny\color{gray},
-  frame=single, tabsize=2, captionpos=b
+  numbers=none,
+  frame=none,
+  tabsize=2,
+  captionpos=b,
+  xleftmargin=0pt,
+  framexleftmargin=0pt,
+  upquote=true
 }
 
 % Стиль для SQL
 \lstdefinestyle{sqlstyle}{
   language=SQL,
+  basicstyle=\fontsize{10pt}{12pt}\ttfamily,
+  keywordstyle=\ttfamily,
+  commentstyle=\ttfamily,
+  stringstyle=\ttfamily,
+  identifierstyle=\ttfamily,
   breaklines=true,
-  columns=fullflexible,
-  basicstyle=\small\rmfamily,
-  keywordstyle=\bfseries\color{clrKeyword},
-  commentstyle=\itshape\color{clrComment},
-  stringstyle=\color{clrString},
+  breakatwhitespace=true,
+  breakindent=0pt,
+  columns=fixed,
+  keepspaces=true,
   showstringspaces=false,
-  numbers=left, numberstyle=\tiny\color{gray},
-  frame=single, tabsize=2, captionpos=b
+  numbers=none,
+  frame=none,
+  tabsize=2,
+  captionpos=b,
+  xleftmargin=0pt,
+  framexleftmargin=0pt,
+  upquote=true
 }
 
 % --- Команды для удобства ---
-\newcommand{\code}[1]{#1}
+% \code{...} — семантический маркер для идентификаторов/путей/строк кода.
+% Визуально неотличим от обычного текста (нормоконтроль БНТУ запрещает другой
+% шрифт для кода вне приложений). В longtblr переопределяется на seqsplit
+% (см. \AtBeginEnvironment{longtblr} выше) для переноса длинных идентификаторов.
+%
+% Двухступенчатая реализация нужна, чтобы внутри аргумента не срабатывали
+% babel-russian shorthand'ы (особенно активный символ "). Без \shorthandoff{"}
+% последовательности вида "Key", id съедают закрывающую кавычку и запятую.
+\newcommand{\codeargnormal}[1]{#1\endgroup}
+\newcommand{\codeargtable}[1]{\seqsplit{#1}\endgroup}
+\let\codearg\codeargnormal
+% Внутри \code делаем " активным и раскрывающимся в \textquotedbl, чтобы
+% получить настоящий прямой ASCII-quote (U+0022). Без этого babel-russian
+% преобразует " в типографский ” (U+201D), а соседние символы рискуют
+% попасть под shorthand-разбор (например, "Key", id → ”Key id).
+% \begingroup ... \endgroup гарантирует scoped catcode только внутри \code.
+\begingroup
+\catcode`\"=\active
+\gdef\code{\begingroup\catcode`\"=\active\let"\textquotedbl\codearg}
+\endgroup
+
+% --- Оформление приложений с исходным кодом (по образцу нормоконтроля БНТУ) ---
+% \appendixhead{буква}{подзаголовок} — заголовок приложения по центру:
+%   первая строка ПРИЛОЖЕНИЕ X (жирный), вторая строка — описание (обычный).
+% \codefile{имя_файла} — нумерованный подзаголовок «N) Код файла <имя>»
+%   с абзацным отступом 1.25 см. Счётчик сбрасывается при каждом \appendixhead.
+\newcounter{codefile}
+\newcommand{\appendixhead}[2]{%
+  \clearpage
+  \setcounter{codefile}{0}%
+  \begin{center}
+  \textbf{ПРИЛОЖЕНИЕ~#1}\\[6pt]
+  #2
+  \end{center}
+  \tocnopagenum{ПРИЛОЖЕНИЕ~#1}%
+  \vspace{12pt}
+}
+\newcommand{\codefile}[1]{%
+  \par\vspace{6pt}%
+  \noindent\hspace{1.25cm}\stepcounter{codefile}\thecodefile)\hspace{0.5em}Код файла \code{#1}%
+  \par\vspace{6pt}%
+}

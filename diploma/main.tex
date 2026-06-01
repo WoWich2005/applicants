@@ -20,6 +20,13 @@
 
 \begin{document}
 
+\input{sections/referat}         % РЕФЕРАТ (стр. 3)
+
+% Ведомость объёма дипломного проекта — лист А4 с рамкой и основной
+% надписью, оформленный в Word и сохранённый как PDF. fitpaper=true
+% масштабирует под A4; pagecommand убирает колонтитул (номер страницы).
+\includepdf[pages=-,fitpaper=true,pagecommand={\thispagestyle{empty}}]{word/4 Ведомость.pdf}
+
 % Оглавление: стр. 5 — без номера, стр. 6+ — с номерами (логика в toc.tex)
 \input{sections/toc}
 

@@ -1,53 +1,661 @@
-% Приложения (графический материал и листинги программ свыше одной страницы)
-% Обозначаются заглавными буквами русского алфавита, за исключением
-% букв Ё, З, Й, О, Ч, Ъ, Ы, Ь.
+% =====================================================================
+% После списка использованной литературы располагаются:
+% (1) графическая часть (10–15 листов А4 с рамкой и основной надписью,
+%     отдельный раздел, не приложение — методичка п. 4.3.2);
+% (2) приложения, обозначаемые заглавными буквами русского алфавита
+%     (без Ё, З, Й, О, Ч, Ъ, Ы, Ь — методичка п. 4.1.29, инструкция п. 295).
+% =====================================================================
 
-\clearpage
-\begin{center}
-\textbf{ПРИЛОЖЕНИЕ~А}\\[6pt]
-Графический материал
-\end{center}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ А. Графический материал}
+% --- Графическая часть ---
+% Графическая часть = слайды презентации в виде распечаток А4 с рамкой
+% и основной надписью. По методичке БНТУ 2025 (п. 4.3.2) — не менее 10
+% и не более 15 листов. PDF-заглушки в каталоге graphic/ заменяются в
+% финальной версии слайдами, оформленными в Word.
 
-\vspace{12pt}
-% TODO: вставить графический материал по списку (8--12 листов А1 / А4 с рамкой):
-% 1) Схема архитектуры приложения
-% 2) Диаграмма вариантов использования
-% 3) ER-диаграмма базы данных
-% 4) Диаграмма последовательности алгоритма отбора абитуриентов
-% 5) Блок-схема алгоритма полного пересчёта результатов отбора
-% 6) Диаграмма ролевой модели доступа
-% 7) Диаграмма архитектуры системы аудита и логического удаления
-% 8) Главное окно приложения
-% 9) Окно результатов конкурсного списка
-% 10) Окно журнала аудита
+% Вставка готового PDF графической части.
+% Файл word/6 Графическая часть.pdf — слайды презентации, оформленные
+% в Word (листы А4 с рамкой и основной надписью) и сохранённые как PDF.
+% pages=- включает все страницы файла; fitpaper=true масштабирует под A4;
+% pagecommand={\thispagestyle{empty}} убирает колонтитулы и абзацный отступ.
+% В оглавлении графическая часть выводится одной строкой без номера
+% страницы (методичка п. 4.3.2 — графический материал не нумеруется
+% как обычные приложения).
+\tocnopagenum{\MakeUppercase{Графическая часть}}
+\includepdf[pages=-,fitpaper=true,pagecommand={\thispagestyle{empty}}]{word/6 Графическая часть.pdf}
 
-\noindent\textit{Графический материал оформляется в виде плакатов формата~А4 с рамкой и основной надписью (угловым штампом) в соответствии с приложениями~7 и~8 методички и помещается после списка использованной литературы. Каждый плакат имеет название, обозначение вида \mbox{ДП--1070122218--2026--XX} и сквозную нумерацию.}
+% --- ПРИЛОЖЕНИЕ А — Распечатки программ ---
+% Методичка п. 4.4: листинги объёмом свыше одной страницы оформляются
+% как приложение. Включены полные тексты ключевых модулей серверной
+% и клиентской частей, превышающие одну страницу.
+% Заголовок и нумерация листингов оформлены через макросы \appendixhead и
+% \codefile (см. preamble.tex) по образцу нормоконтроля БНТУ.
+\appendixhead{А}{Листинг исходных кодов программы}
 
-\clearpage
-\begin{center}
-\textbf{ПРИЛОЖЕНИЕ~Б}\\[6pt]
-Листинги ключевых модулей программы
-\end{center}
-\addcontentsline{toc}{section}{ПРИЛОЖЕНИЕ Б. Листинги ключевых модулей}
+\codefile{FullRecalculationCore.cs}
+\begin{lstlisting}[style=csharpstyle]
+namespace bntuapplicants_backend.Services.Selection
+{
+    public static class FullRecalculationCore
+    {
+        public sealed record Application(int ApplicantId, int CategoryId, int SelectionPriority);
 
-\vspace{12pt}
-\subsection*{Б.1 Сервис JWT-аутентификации (\code{JwtService.cs})}
+        public sealed record Category(int Id, int CompetitionListId, int Quota, int Priority, int CriteriaGroupId);
 
-% TODO: вставить листинг JwtService.cs
+        public sealed record Snapshot(
+            IReadOnlyList<Application> Applications,
+            IReadOnlyList<Category> Categories,
+            IReadOnlyDictionary<int, int> CompetitionListPlans,
+            IReadOnlyDictionary<int, IReadOnlyList<int>> CriteriaByGroup,
+            IReadOnlyDictionary<int, IReadOnlyDictionary<int, int>> Scores,
+            IReadOnlyDictionary<int, bool> CriteriaHigherIsBetter
+        );
 
-\subsection*{Б.2 Ядро алгоритма пересчёта результатов отбора (\code{FullRecalculationCore.cs})}
+        public sealed record Selection(int ApplicantId, int CategoryId);
 
-% TODO: вставить листинг FullRecalculationCore.cs
+        public static IReadOnlyList<Selection> Run(Snapshot snapshot)
+        {
+            var categoryMap = snapshot.Categories.ToDictionary(c => c.Id);
 
-\subsection*{Б.3 Компаратор кандидатов (\code{CategoryComparer.cs})}
+            var validApplications = snapshot.Applications
+                .Where(app =>
+                {
+                    if (!categoryMap.TryGetValue(app.CategoryId, out var cat)) return false;
+                    if (!snapshot.CriteriaByGroup.TryGetValue(cat.CriteriaGroupId, out var criteria)) return true;
+                    if (criteria.Count == 0) return true;
+                    if (!snapshot.Scores.TryGetValue(app.ApplicantId, out var scores)) return false;
+                    return criteria.All(cid => scores.ContainsKey(cid));
+                })
+                .ToList();
 
-% TODO: вставить листинг CategoryComparer.cs
+            var prefs = validApplications
+                .GroupBy(a => a.ApplicantId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderBy(a => a.SelectionPriority).ToArray()
+                );
 
-\subsection*{Б.4 Сервис журналирования (\code{AuditLogger.cs})}
+            var nextIdx = prefs.Keys.ToDictionary(id => id, _ => 0);
+            var catPool = snapshot.Categories.ToDictionary(c => c.Id,
+                _ => new SortedSet<Candidate>(CategoryComparer.Instance));
 
-% TODO: вставить листинг AuditLogger.cs
+            var clTotal = snapshot.Categories
+                .GroupBy(c => c.CompetitionListId)
+                .ToDictionary(g => g.Key, _ => 0);
 
-\subsection*{Б.5 Интерцептор Axios на клиенте (\code{api/index.js})}
+            var clCats = snapshot.Categories
+                .GroupBy(c => c.CompetitionListId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => g.OrderByDescending(c => c.Priority).ThenBy(c => c.Id).Select(c => c.Id).ToList()
+                );
 
-% TODO: вставить листинг api/index.js
+            var freeQueue = new Queue<int>(prefs.Keys);
+
+            while (freeQueue.Count > 0)
+            {
+                int applicantId = freeQueue.Dequeue();
+                if (!nextIdx.TryGetValue(applicantId, out int idx) || idx >= prefs[applicantId].Length)
+                    continue;
+
+                var app = prefs[applicantId][idx];
+                nextIdx[applicantId] = idx + 1;
+                if (!categoryMap.TryGetValue(app.CategoryId, out var cat)) continue;
+
+                int clId = cat.CompetitionListId;
+                var scoreVector = BuildScoreVector(applicantId, cat.CriteriaGroupId, snapshot);
+                var candidate = new Candidate(applicantId, app.SelectionPriority, scoreVector);
+
+                catPool[app.CategoryId].Add(candidate);
+                clTotal[clId]++;
+
+                while (catPool[app.CategoryId].Count > cat.Quota)
+                {
+                    var worst = catPool[app.CategoryId].Max!;
+                    catPool[app.CategoryId].Remove(worst);
+                    clTotal[clId]--;
+                    freeQueue.Enqueue(worst.ApplicantId);
+                }
+
+                if (snapshot.CompetitionListPlans.TryGetValue(clId, out int plan))
+                {
+                    while (clTotal[clId] > plan)
+                    {
+                        int? victimCatId = null;
+                        if (clCats.TryGetValue(clId, out var catList))
+                        {
+                            foreach (int cId in catList)
+                            {
+                                if (catPool[cId].Count > 0) { victimCatId = cId; break; }
+                            }
+                        }
+                        if (victimCatId == null) break;
+
+                        var worst = catPool[victimCatId.Value].Max!;
+                        catPool[victimCatId.Value].Remove(worst);
+                        clTotal[clId]--;
+                        freeQueue.Enqueue(worst.ApplicantId);
+                    }
+                }
+            }
+
+            var result = new List<Selection>();
+            foreach (var (catId, pool) in catPool)
+                foreach (var candidate in pool)
+                    result.Add(new Selection(candidate.ApplicantId, catId));
+
+            return result;
+        }
+
+        private static int[] BuildScoreVector(int applicantId, int criteriaGroupId, Snapshot snapshot)
+        {
+            if (!snapshot.CriteriaByGroup.TryGetValue(criteriaGroupId, out var criteriaIds) || criteriaIds.Count == 0)
+                return [];
+            if (!snapshot.Scores.TryGetValue(applicantId, out var scores))
+                return new int[criteriaIds.Count];
+
+            return [.. criteriaIds.Select(cid =>
+            {
+                int v = scores.TryGetValue(cid, out int val) ? val : 0;
+                bool higherIsBetter = !snapshot.CriteriaHigherIsBetter.TryGetValue(cid, out bool hib) || hib;
+                return higherIsBetter ? v : -v;
+            })];
+        }
+    }
+}
+\end{lstlisting}
+
+\codefile{SelectionService.cs}
+\begin{lstlisting}[style=csharpstyle]
+using bntuapplicants_backend.Data.Sql;
+using bntuapplicants_backend.Services.Selection;
+using Npgsql;
+
+namespace bntuapplicants_backend.Services
+{
+    public class SelectionService
+    {
+        private readonly string _connectionString;
+        private readonly IAuditLogger _auditLogger;
+
+        public SelectionService(IConfiguration configuration, IAuditLogger auditLogger)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            _auditLogger = auditLogger;
+        }
+
+        public async Task RecalculateAllAsync()
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+            await conn.OpenAsync();
+            using var tx = await conn.BeginTransactionAsync();
+            try
+            {
+                using var lockCmd = new NpgsqlCommand("SELECT pg_advisory_xact_lock(0)", conn, tx);
+                await lockCmd.ExecuteNonQueryAsync();
+
+                var snapshot = await LoadSnapshotAsync(conn, tx);
+                var result = FullRecalculationCore.Run(snapshot);
+
+                using var delCmd = new NpgsqlCommand("DELETE FROM selectedapplicants", conn, tx);
+                await delCmd.ExecuteNonQueryAsync();
+
+                if (result.Count > 0)
+                {
+                    using var writer = await conn.BeginBinaryImportAsync(
+                        "COPY selectedapplicants (applicantid, admissioncategoryid) FROM STDIN (FORMAT BINARY)");
+                    foreach (var sel in result)
+                    {
+                        await writer.StartRowAsync();
+                        await writer.WriteAsync(sel.ApplicantId, NpgsqlTypes.NpgsqlDbType.Integer);
+                        await writer.WriteAsync(sel.CategoryId, NpgsqlTypes.NpgsqlDbType.Integer);
+                    }
+                    await writer.CompleteAsync();
+                }
+
+                await _auditLogger.LogRecalculationAsync(result.Count, tx);
+                await tx.CommitAsync();
+            }
+            catch
+            {
+                await tx.RollbackAsync();
+                throw;
+            }
+        }
+
+        private async Task<FullRecalculationCore.Snapshot> LoadSnapshotAsync(NpgsqlConnection conn, NpgsqlTransaction tx)
+        {
+            const string appSQL = $@"
+                SELECT aac.applicantid, aac.admissioncategoryid, aac.selectionpriority
+                FROM applicantadmissioncategories aac
+                JOIN applicants ON aac.applicantid = applicants.id
+                WHERE {SoftDelete.NotSoftDeleted}";
+
+            var applications = new List<FullRecalculationCore.Application>();
+            using (var cmd = new NpgsqlCommand(appSQL, conn, tx))
+            using (var r = await cmd.ExecuteReaderAsync())
+                while (await r.ReadAsync())
+                    applications.Add(new FullRecalculationCore.Application(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2)));
+
+            const string catSQL = @"SELECT id, competitionlistid, quota, priority, evaluationcriteriagroupid FROM admissioncategories";
+            var categories = new List<FullRecalculationCore.Category>();
+            using (var cmd = new NpgsqlCommand(catSQL, conn, tx))
+            using (var r = await cmd.ExecuteReaderAsync())
+                while (await r.ReadAsync())
+                    categories.Add(new FullRecalculationCore.Category(r.GetInt32(0), r.GetInt32(1), r.GetInt32(2), r.GetInt32(3), r.GetInt32(4)));
+
+            var clPlans = new Dictionary<int, int>();
+            using (var cmd = new NpgsqlCommand("SELECT id, plan FROM competitionlists", conn, tx))
+            using (var r = await cmd.ExecuteReaderAsync())
+                while (await r.ReadAsync())
+                    clPlans[r.GetInt32(0)] = r.GetInt32(1);
+
+            const string criteriaSQL = @"SELECT groupid, criteriaid FROM evaluationcriteriagroupitems ORDER BY groupid, priority ASC";
+            var criteriaByGroup = new Dictionary<int, List<int>>();
+            using (var cmd = new NpgsqlCommand(criteriaSQL, conn, tx))
+            using (var r = await cmd.ExecuteReaderAsync())
+                while (await r.ReadAsync())
+                {
+                    int gId = r.GetInt32(0), cId = r.GetInt32(1);
+                    if (!criteriaByGroup.ContainsKey(gId)) criteriaByGroup[gId] = new List<int>();
+                    criteriaByGroup[gId].Add(cId);
+                }
+
+            const string scoreSQL = $@"
+                SELECT aev.applicantid, aev.evaluationcriteriaid, aev.value
+                FROM applicantevaluationvalues aev
+                JOIN applicants ON aev.applicantid = applicants.id
+                WHERE {SoftDelete.NotSoftDeleted}";
+            var scores = new Dictionary<int, Dictionary<int, int>>();
+            using (var cmd = new NpgsqlCommand(scoreSQL, conn, tx))
+            using (var r = await cmd.ExecuteReaderAsync())
+                while (await r.ReadAsync())
+                {
+                    int aId = r.GetInt32(0), cId = r.GetInt32(1), val = r.GetInt32(2);
+                    if (!scores.ContainsKey(aId)) scores[aId] = new Dictionary<int, int>();
+                    scores[aId][cId] = val;
+                }
+
+            var criteriaHigherIsBetter = new Dictionary<int, bool>();
+            using (var cmd = new NpgsqlCommand("SELECT id, type FROM evaluationcriteria", conn, tx))
+            using (var r = await cmd.ExecuteReaderAsync())
+                while (await r.ReadAsync())
+                    criteriaHigherIsBetter[r.GetInt32(0)] = r.GetString(1) == "higher_is_better";
+
+            return new FullRecalculationCore.Snapshot(
+                applications, categories, clPlans,
+                criteriaByGroup.ToDictionary(kv => kv.Key, kv => (IReadOnlyList<int>)kv.Value),
+                scores.ToDictionary(kv => kv.Key, kv => (IReadOnlyDictionary<int, int>)kv.Value),
+                criteriaHigherIsBetter
+            );
+        }
+    }
+}
+\end{lstlisting}
+
+\codefile{CategoryComparer.cs}
+\begin{lstlisting}[style=csharpstyle]
+namespace bntuapplicants_backend.Services.Selection
+{
+    public sealed record Candidate(int ApplicantId, int SelectionPriority, int[] ScoreVector);
+
+    public sealed class CategoryComparer : IComparer<Candidate>
+    {
+        public static readonly CategoryComparer Instance = new();
+
+        private CategoryComparer() { }
+
+        public int Compare(Candidate? a, Candidate? b)
+        {
+            if (a is null && b is null) return 0;
+            if (a is null) return 1;
+            if (b is null) return -1;
+
+            int len = Math.Min(a.ScoreVector.Length, b.ScoreVector.Length);
+            for (int i = 0; i < len; i++)
+            {
+                int cmp = b.ScoreVector[i].CompareTo(a.ScoreVector[i]);
+                if (cmp != 0) return cmp;
+            }
+            if (a.ScoreVector.Length != b.ScoreVector.Length)
+                return b.ScoreVector.Length.CompareTo(a.ScoreVector.Length);
+
+            int spCmp = a.SelectionPriority.CompareTo(b.SelectionPriority);
+            if (spCmp != 0) return spCmp;
+
+            return a.ApplicantId.CompareTo(b.ApplicantId);
+        }
+    }
+}
+\end{lstlisting}
+
+\codefile{AuditLogger.cs}
+\begin{lstlisting}[style=csharpstyle]
+using Npgsql;
+using System.Text.Json;
+
+namespace bntuapplicants_backend.Services
+{
+    public class AuditLogger : IAuditLogger
+    {
+        private readonly string _connectionString;
+        private readonly ICurrentUserService _currentUser;
+
+        private static readonly JsonSerializerOptions _jsonOptions = new()
+        {
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+        };
+
+        public AuditLogger(IConfiguration configuration, ICurrentUserService currentUser)
+        {
+            _connectionString = configuration.GetConnectionString("DefaultConnection")!;
+            _currentUser = currentUser;
+        }
+
+        public Task LogCreateAsync(string entityType, string entityId, object after, NpgsqlTransaction? tx = null)
+            => WriteAsync("create", entityType, entityId, new { after }, tx);
+
+        public Task LogUpdateAsync(string entityType, string entityId, object diff, NpgsqlTransaction? tx = null)
+            => WriteAsync("update", entityType, entityId, new { diff }, tx);
+
+        public Task LogDeleteAsync(string entityType, string entityId, object before, NpgsqlTransaction? tx = null)
+            => WriteAsync("delete", entityType, entityId, new { before }, tx);
+
+        public Task LogValidateAsync(int applicantId, string? comment, NpgsqlTransaction? tx = null)
+            => WriteAsync("validate", "applicant", applicantId.ToString(), new { comment }, tx);
+
+        public Task LogInvalidateAsync(int applicantId, bool automatic, string? comment = null, NpgsqlTransaction? tx = null)
+            => WriteAsync("invalidate", "applicant", applicantId.ToString(), new { comment, automatic }, tx);
+
+        public Task LogDeleteConfirmedAsync(int applicantId, NpgsqlTransaction? tx = null)
+            => WriteAsync("delete_confirmed", "applicant", applicantId.ToString(), null, tx);
+
+        public Task LogDeleteRejectedAsync(int applicantId, NpgsqlTransaction? tx = null)
+            => WriteAsync("delete_rejected", "applicant", applicantId.ToString(), null, tx);
+
+        public Task LogRecalculationAsync(int selectedCount, NpgsqlTransaction tx)
+            => WriteAsync("recalculate_all", "selection", "all", new { selectedCount }, tx);
+
+        public async Task ResetValidationIfNeededAsync(int applicantId, NpgsqlTransaction tx)
+        {
+            var conn = tx.Connection!;
+
+            const string selectSql = "SELECT validated FROM applicants WHERE id = @ApplicantId";
+            using var selectCmd = new NpgsqlCommand(selectSql, conn, tx);
+            selectCmd.Parameters.AddWithValue("@ApplicantId", applicantId);
+
+            var result = await selectCmd.ExecuteScalarAsync();
+            if (result is not true) return;
+
+            const string updateSql = "UPDATE applicants SET validated = false WHERE id = @ApplicantId";
+            using var updateCmd = new NpgsqlCommand(updateSql, conn, tx);
+            updateCmd.Parameters.AddWithValue("@ApplicantId", applicantId);
+            await updateCmd.ExecuteNonQueryAsync();
+
+            await LogInvalidateAsync(applicantId, automatic: true, comment: "данные изменены", tx: tx);
+        }
+
+        private async Task WriteAsync(string action, string entityType, string entityId, object? changes, NpgsqlTransaction? tx)
+        {
+            const string sql = @"
+                INSERT INTO audit_log (user_id, username, action, entity_type, entity_id, changes)
+                VALUES (@UserId, @Username, @Action, @EntityType, @EntityId, @Changes::jsonb)";
+
+            NpgsqlConnection? ownedConnection = null;
+            NpgsqlConnection connection;
+
+            if (tx != null) connection = tx.Connection!;
+            else
+            {
+                ownedConnection = new NpgsqlConnection(_connectionString);
+                await ownedConnection.OpenAsync();
+                connection = ownedConnection;
+            }
+
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, connection, tx);
+                cmd.Parameters.AddWithValue("@UserId", (object?)_currentUser.UserId ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Username", (object?)_currentUser.Username ?? DBNull.Value);
+                cmd.Parameters.AddWithValue("@Action", action);
+                cmd.Parameters.AddWithValue("@EntityType", entityType);
+                cmd.Parameters.AddWithValue("@EntityId", entityId);
+                cmd.Parameters.AddWithValue("@Changes", changes != null
+                    ? JsonSerializer.Serialize(changes, _jsonOptions)
+                    : DBNull.Value);
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+            finally
+            {
+                if (ownedConnection != null) await ownedConnection.DisposeAsync();
+            }
+        }
+    }
+}
+\end{lstlisting}
+
+\codefile{JwtService.cs}
+\begin{lstlisting}[style=csharpstyle]
+using bntuapplicants_backend.Models;
+using Microsoft.IdentityModel.Tokens;
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Text;
+
+namespace bntuapplicants_backend.Services
+{
+    public class JwtService
+    {
+        private readonly IConfiguration _config;
+
+        public JwtService(IConfiguration config)
+        {
+            _config = config;
+        }
+
+        public string GenerateToken(User user)
+        {
+            var claims = new List<Claim>
+            {
+                new(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new(ClaimTypes.Name, user.Username),
+                new(ClaimTypes.Role, user.Role),
+            };
+
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_config["Jwt:SecretKey"]!));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var expiry = DateTime.UtcNow.AddHours(int.Parse(_config["Jwt:ExpirationHours"] ?? "8"));
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: expiry,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
+        }
+    }
+}
+\end{lstlisting}
+
+\codefile{api/index.js}
+\begin{lstlisting}[style=jsxstyle]
+import axios from "axios"
+
+export const instance = axios.create({
+  baseURL: 'http://localhost:5059/api/v1',
+  headers: {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+  }
+})
+
+instance.interceptors.request.use((config) => {
+  try {
+    const stored = localStorage.getItem('auth')
+    const auth = stored ? JSON.parse(stored) : null
+    if (auth?.token) {
+      config.headers.Authorization = `Bearer ${auth.token}`
+    }
+  } catch {
+    // ignore
+  }
+  config.headers['Accept-Language'] = localStorage.getItem('language') ?? 'ru'
+  return config
+})
+
+instance.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response?.status === 401 && !window.location.pathname.includes('/login')) {
+      localStorage.removeItem('auth')
+      window.location.href = '/login'
+    }
+    return Promise.reject(error)
+  }
+)
+\end{lstlisting}
+
+\codefile{useServerTable.js}
+\begin{lstlisting}[style=jsxstyle]
+import { useCallback, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
+
+export function useServerTable(fetchAsync, { defaultPageSize = 10, minDelay = 500 } = {}) {
+  const { t } = useTranslation()
+  const [data, setData] = useState([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(defaultPageSize)
+  const [loading, setLoading] = useState(false)
+  const [filters, setFilters] = useState({})
+  const [sortField, setSortField] = useState(null)
+  const [sortOrder, setSortOrder] = useState(null)
+
+  useEffect(() => {
+    if (!fetchAsync) return
+    let cancelled = false
+    setLoading(true)
+    const delay = new Promise(res => setTimeout(res, minDelay))
+    Promise.all([delay, fetchAsync({ page, pageSize, filters, sortField, sortOrder })])
+      .then(([, r]) => {
+        if (cancelled) return
+        setData(r.data.items ?? r.data)
+        setTotal(r.data.total ?? r.data.length)
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
+  }, [fetchAsync, page, pageSize, filters, sortField, sortOrder])
+
+  const onTableChange = useCallback((newFilters, sorter) => {
+    setFilters(newFilters ?? {})
+    setSortField(sorter?.field ?? null)
+    setSortOrder(sorter?.order ?? null)
+    setPage(1)
+  }, [])
+
+  const pagination = {
+    current: page,
+    pageSize,
+    total,
+    showSizeChanger: true,
+    showTotal: (tot) => t('common.total', { total: tot }),
+    onChange: (p, ps) => { setPage(p); setPageSize(ps) },
+  }
+
+  return { data, loading, total, page, setPage, pageSize, filters,
+    setFilters, setData, setTotal, pagination, onTableChange }
+}
+\end{lstlisting}
+
+% Конфигурационные файлы развёртывания — продолжение приложения А.
+% Нумерация \codefile продолжается сквозной (счётчик не сбрасывается,
+% т.к. нет нового \appendixhead).
+\codefile{infra/docker-compose.yml}
+\begin{lstlisting}
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: bntuapplicants-postgres
+    env_file:
+      - .env
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+\end{lstlisting}
+
+\codefile{liquibase/Dockerfile}
+\begin{lstlisting}
+FROM liquibase/liquibase:5.0.0
+
+RUN lpm add postgresql --global
+
+COPY liquibase.properties /liquibase/liquibase.docker.properties
+COPY db.changelog-master.yaml /liquibase/changelog/db.changelog-master.yaml
+COPY sql/ /liquibase/changelog/sql/
+
+CMD ["update"]
+\end{lstlisting}
+
+\codefile{liquibase/docker-compose.yml}
+\begin{lstlisting}
+services:
+  liquibase:
+    build: .
+    env_file:
+      - .env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+\end{lstlisting}
+
+\codefile{infra/.env.example}
+\begin{lstlisting}
+POSTGRES_DB=bntuapplicants
+POSTGRES_USER=your_user
+POSTGRES_PASSWORD=your_password
+POSTGRES_PORT=5432
+\end{lstlisting}
+
+\codefile{liquibase/.env.example}
+\begin{lstlisting}
+LIQUIBASE_COMMAND_URL=jdbc:postgresql://host.docker.internal:5432/your_db
+LIQUIBASE_COMMAND_USERNAME=your_user
+LIQUIBASE_COMMAND_PASSWORD=your_password
+\end{lstlisting}
+
+\codefile{liquibase/sql/0001\_init\_schema.sql}
+\begin{lstlisting}[style=sqlstyle]
+CREATE TABLE faculties
+(
+    id   SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE specialties
+(
+    id               SERIAL PRIMARY KEY,
+    name             VARCHAR(255) NOT NULL,
+    facultyid        INT          NOT NULL,
+    recruitmentplan  INT          NOT NULL,
+    CONSTRAINT fk_specialties_faculties
+        FOREIGN KEY (facultyid) REFERENCES faculties (id)
+);
+
+CREATE TABLE applicants
+(
+    id   SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL
+);
+\end{lstlisting}
