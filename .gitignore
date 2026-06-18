@@ -1,3 +1,6 @@
 /Data
 .DS_Store
 .claude
+
+/backups/
+*.dump
