@@ -69,7 +69,10 @@ function CrudTable(props) {
     setFilters: setServerFilters,
     pagination: paginationConfig,
     onTableChange,
-  } = useServerTable(props.serverSidePagination ? serverFetchAsync : null)
+  } = useServerTable(props.serverSidePagination ? serverFetchAsync : null, {
+    defaultSortField: props.defaultSortField ?? null,
+    defaultSortOrder: props.defaultSortOrder ?? null,
+  })
 
   const dataSource = props.serverSidePagination ? serverData : localData
   const setDataSource = props.serverSidePagination ? setServerData : setLocalData

@@ -27,6 +27,8 @@ function Applicants() {
         renderEditUrl={(/** @type {any} */ el) => generatePath(ROUTES.APPLICANT_EDIT, { applicantId: el.id })}
 
         serverSidePagination={true}
+        defaultSortField="id"
+        defaultSortOrder="ascend"
         getPagedAsync={(/** @type {any} */ params) => applicantsApi.getPaged(params)}
         deleteAsync={(/** @type {any} */ id) => applicantsApi.delete(id)}
 
@@ -44,6 +46,7 @@ function Applicants() {
             key: "id",
             withSearch: true,
             sorter: true,
+            defaultSortOrder: "ascend",
           },
           {
             title: t('applicant.colId'),

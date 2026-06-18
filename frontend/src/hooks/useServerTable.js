@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next'
  *   Stable callback (wrap in useCallback at call site). Pass null to disable fetching.
  * @param {{ defaultPageSize?: number, minDelay?: number }} [options]
  */
-export function useServerTable(fetchAsync, { defaultPageSize = 10, minDelay = 500 } = {}) {
+export function useServerTable(fetchAsync, { defaultPageSize = 10, minDelay = 500, defaultSortField = null, defaultSortOrder = null } = {}) {
   const { t } = useTranslation()
   const [data, setData] = useState([])
   const [total, setTotal] = useState(0)
@@ -16,8 +16,8 @@ export function useServerTable(fetchAsync, { defaultPageSize = 10, minDelay = 50
   const [pageSize, setPageSize] = useState(defaultPageSize)
   const [loading, setLoading] = useState(false)
   const [filters, setFilters] = useState({})
-  const [sortField, setSortField] = useState(null)
-  const [sortOrder, setSortOrder] = useState(null)
+  const [sortField, setSortField] = useState(defaultSortField)
+  const [sortOrder, setSortOrder] = useState(defaultSortOrder)
 
   useEffect(() => {
     if (!fetchAsync) return
