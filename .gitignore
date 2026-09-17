@@ -2,5 +2,5 @@
 .DS_Store
 .claude
 
-/backups/
-*.dump
+/backups/backup_20260612_093711.dump
+/backups/backup_20260612_093913.dump
